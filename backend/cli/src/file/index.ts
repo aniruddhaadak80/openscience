@@ -424,7 +424,11 @@ export namespace File {
     const project = Instance.project
     if (project.vcs !== "git") return []
 
-    const diffOutput = await $`git -c core.quotepath=false diff --numstat HEAD`
+    // `--relative` so every source below reports a path from Instance.directory,
+    // the same form `ls-files --others` already returns. Without it git prints
+    // repository-root-relative paths, and re-relativizing a relative path
+    // resolves it against the process working directory instead.
+    const diffOutput = await $`git -c core.quotepath=false diff --numstat --relative HEAD`
       .cwd(Instance.directory)
       .quiet()
       .nothrow()
@@ -471,7 +475,7 @@ export namespace File {
     }
 
     // Get deleted files
-    const deletedOutput = await $`git -c core.quotepath=false diff --name-only --diff-filter=D HEAD`
+    const deletedOutput = await $`git -c core.quotepath=false diff --name-only --diff-filter=D --relative HEAD`
       .cwd(Instance.directory)
       .quiet()
       .nothrow()
@@ -489,10 +493,7 @@ export namespace File {
       }
     }
 
-    return changedFiles.map((x) => ({
-      ...x,
-      path: path.relative(Instance.directory, x.path),
-    }))
+    return changedFiles
   }
 
   async function readPath(file: string, full: string): Promise<Content> {

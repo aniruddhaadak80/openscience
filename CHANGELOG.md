@@ -336,6 +336,13 @@ public 50 the old detector named an example's `samples.csv` and the input
   line N" hint pointed one line too far. A trailing newline now ends the last
   line instead of starting a new one, so the printed numbers, the total and
   `offset` all agree with the file.
+- **Changed files are named relative to the project, not the repository.** When
+  OpenScience ran in a subdirectory of a repository, the file status it reported
+  came back as a chain of `..` segments pointing wherever the server had been
+  started, so a change to `pkg/tracked.txt` was listed as
+  `../../…/pkg/tracked.txt` and could not be opened. The paths are now the ones
+  git reports from the project directory, and a change outside that directory is
+  no longer listed as one of its changes.
 - **A response that dies before any output recovers on its own.** One
   Extra-high turn on the managed gateway got its first byte, then nothing,
   and read as "Thinking" for eighteen minutes; left alone it would have
