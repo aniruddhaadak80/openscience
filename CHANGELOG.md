@@ -353,6 +353,12 @@ public 50 the old detector named an example's `samples.csv` and the input
   `$&` or `$'` corrupted the prompt: `$$` collapsed to `$`, `$&` pasted the
   `${path}` placeholder, and `$'` pasted the whole rest of the prompt into the
   path. The path is now inserted verbatim.
+- **`list` no longer hides files on Windows.** The tree was cut on `/` while
+  ripgrep prints `\`, so on Windows every file three or more directories deep was
+  collected and counted and then never rendered — the model was told there were
+  a hundred files and shown only the ones at the root. The tree is now cut on
+  either separator and always rendered with `/`, so a listing reads the same on
+  every platform.
 - **A response that dies before any output recovers on its own.** One
   Extra-high turn on the managed gateway got its first byte, then nothing,
   and read as "Thinking" for eighteen minutes; left alone it would have
