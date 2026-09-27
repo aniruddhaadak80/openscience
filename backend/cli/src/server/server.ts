@@ -821,6 +821,9 @@ export namespace Server {
                     await stream.writeSSE({
                       data: JSON.stringify(event),
                     })
+                    // One resync frame covers the losses since the client last
+                    // re-hydrated, so the next overflow has to raise its own.
+                    if (event.type === "server.connected") state.overflowed = false
                     if (event.type !== Bus.InstanceDisposed.type) continue
                     cleanup()
                     stream.close()

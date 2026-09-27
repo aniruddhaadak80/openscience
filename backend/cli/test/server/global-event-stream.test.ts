@@ -176,4 +176,71 @@ describe("global.event", () => {
       },
     })
   })
+
+  test("a second overflow on one connection asks the client to resync again", async () => {
+    await Instance.provide({
+      directory: projectRoot,
+      fn: async () => {
+        const fetch = Server.internalFetch()
+        const response = await fetch("http://openscience.internal/global/event")
+        expect(response.status).toBe(200)
+        expect(response.body).not.toBeNull()
+
+        // One reader spans both overflows, because the second resync is only
+        // due once the first frame has actually reached the client.
+        const reader = response.body!.getReader()
+        const decoder = new TextDecoder()
+        const pending = { text: "" }
+        let connected = 0
+        const take = (chunk: ReadableStreamReadResult<Uint8Array>) => {
+          pending.text += decoder.decode(chunk.value, { stream: true })
+          const parts = pending.text.split("\n\n")
+          pending.text = parts.pop() ?? ""
+          for (const part of parts) {
+            const data = part
+              .split("\n")
+              .filter((line) => line.startsWith("data: "))
+              .map((line) => line.slice(6))
+              .join("\n")
+            if (!data) continue
+            if ((JSON.parse(data) as Frame).payload.type === CONNECTED) connected++
+          }
+        }
+        const waitFor = async (want: number) => {
+          const deadline = Date.now() + 15_000
+          while (connected < want && Date.now() < deadline) {
+            const chunk = await reader.read()
+            if (chunk.done) return false
+            take(chunk)
+          }
+          return connected >= want
+        }
+        // Only pings can still arrive once the resync is counted, so racing the
+        // read here and losing one to the timeout costs nothing.
+        const settle = async () => {
+          for (;;) {
+            const chunk = await Promise.race([reader.read(), Bun.sleep(300).then(() => undefined)])
+            if (!chunk || chunk.done) return
+            take(chunk)
+          }
+        }
+        const flood = (from: number) => {
+          for (let n = from; n < from + 3000; n++)
+            GlobalBus.emit("event", { directory: "global", payload: { type: PING, properties: { n } } })
+        }
+
+        flood(0)
+        // The handshake frame plus the resync raised by the first overflow.
+        expect(await waitFor(2)).toBe(true)
+        // Empty the queue so the next overflow starts from a clean connection
+        // that has already been told to re-hydrate.
+        await settle()
+        flood(3000)
+        // A latch that never clears leaves the workspace stale until it
+        // reloads, because the second loss raises no frame of its own.
+        expect(await waitFor(3)).toBe(true)
+        await reader.cancel().catch(() => undefined)
+      },
+    })
+  }, 30_000)
 })

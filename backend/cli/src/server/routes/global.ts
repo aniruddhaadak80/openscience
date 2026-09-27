@@ -220,6 +220,9 @@ export const GlobalRoutes = lazy(() =>
                 const event = state.closed ? undefined : queue.shift()
                 if (!event) break
                 await stream.writeSSE({ data: JSON.stringify(event) })
+                // One resync frame covers the losses since the client last
+                // re-hydrated, so the next overflow has to raise its own.
+                if (event.payload.type === "server.connected") state.overflowed = false
               }
             } catch (error) {
               log.debug("global event write failed", { error })

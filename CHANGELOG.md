@@ -324,6 +324,12 @@ public 50 the old detector named an example's `samples.csv` and the input
   became inline math), `$&` came back as the placeholder itself and `$'`
   dropped everything after it. A command's arguments now reach the model
   exactly as they were typed.
+- **A later event-stream overflow no longer leaves the workspace stale.** The
+  bounded per-connection queue asked the client to re-hydrate only the first
+  time it overflowed, so a second overflow dropped events without a frame to
+  announce it and the workspace could stay out of date until it reloaded. Every
+  overflow now raises its own `server.connected` frame, as soon as the previous
+  one has been delivered.
 - **A response that dies before any output recovers on its own.** One
   Extra-high turn on the managed gateway got its first byte, then nothing,
   and read as "Thinking" for eighteen minutes; left alone it would have
