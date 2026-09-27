@@ -348,6 +348,11 @@ public 50 the old detector named an example's `samples.csv` and the input
   ripgrep would have explained is suppressed by `--no-messages` and an empty
   string cannot fall through a `??`. The generic text now appears whenever there
   is no specific reason to give.
+- **`/init` names the project directory you actually have.** The path was
+  spliced in with a string replacement, so a directory whose name contains `$$`,
+  `$&` or `$'` corrupted the prompt: `$$` collapsed to `$`, `$&` pasted the
+  `${path}` placeholder, and `$'` pasted the whole rest of the prompt into the
+  path. The path is now inserted verbatim.
 - **A response that dies before any output recovers on its own.** One
   Extra-high turn on the managed gateway got its first byte, then nothing,
   and read as "Thinking" for eighteen minutes; left alone it would have

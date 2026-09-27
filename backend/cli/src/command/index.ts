@@ -101,7 +101,9 @@ export namespace Command {
         category: "project",
         usage: "/init [notes]",
         get template() {
-          return PROMPT_INITIALIZE.replace("${path}", Instance.worktree)
+          // A function replacement: `$$`, `$&` and friends in a project
+          // directory name are content, not patterns.
+          return PROMPT_INITIALIZE.replace("${path}", () => Instance.worktree)
         },
         hints: hints(PROMPT_INITIALIZE),
       },
