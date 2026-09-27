@@ -319,6 +319,11 @@ public 50 the old detector named an example's `samples.csv` and the input
   read from `{file:prompt.md}` lost half of every `$$` (display math became
   inline math), and `$&`, `` $` `` or `$'` in the file were replaced with
   parts of the config value. The file's text is now inserted verbatim.
+- **A slash command keeps the dollar signs you typed.** `$ARGUMENTS` was
+  substituted with a string replacement, so `$$` collapsed to `$` (display math
+  became inline math), `$&` came back as the placeholder itself and `$'`
+  dropped everything after it. A command's arguments now reach the model
+  exactly as they were typed.
 - **A response that dies before any output recovers on its own.** One
   Extra-high turn on the managed gateway got its first byte, then nothing,
   and read as "Thinking" for eighteen minutes; left alone it would have
