@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import fs from "node:fs/promises"
 import path from "path"
-import { GrepTool } from "../../src/tool/grep"
+import { GrepTool, searchFailure } from "../../src/tool/grep"
 import { Instance } from "../../src/project/instance"
 import { tmpdir } from "../fixture/fixture"
 
@@ -239,5 +239,21 @@ describe("CRLF regex handling", () => {
     const mixedOutput = "file1.txt|1|content1\nfile2.txt|2|content2\r\nfile3.txt|3|content3"
     const lines = mixedOutput.trim().split(/\r?\n/)
     expect(lines.length).toBe(3)
+  })
+})
+
+describe("tool.grep failure message", () => {
+  test("names a missing path instead of the generic text", () => {
+    expect(searchFailure("No such file or directory: /tmp/gone", "")).toBe(
+      "Search failed: No such file or directory: /tmp/gone",
+    )
+  })
+
+  test("passes ripgrep's own stderr through when it said something", () => {
+    expect(searchFailure(undefined, "regex parse error")).toBe("Search failed: regex parse error")
+  })
+
+  test("still says something when --no-messages left stderr empty", () => {
+    expect(searchFailure(undefined, "")).toBe("Search failed: Some paths could not be searched.")
   })
 })

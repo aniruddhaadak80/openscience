@@ -343,6 +343,11 @@ public 50 the old detector named an example's `samples.csv` and the input
   `../../…/pkg/tracked.txt` and could not be opened. The paths are now the ones
   git reports from the project directory, and a change outside that directory is
   no longer listed as one of its changes.
+- **A search failure says what went wrong.** Searching a directory the agent
+  cannot read reported `Search failed:` and nothing else, because the text
+  ripgrep would have explained is suppressed by `--no-messages` and an empty
+  string cannot fall through a `??`. The generic text now appears whenever there
+  is no specific reason to give.
 - **A response that dies before any output recovers on its own.** One
   Extra-high turn on the managed gateway got its first byte, then nothing,
   and read as "Thinking" for eighteen minutes; left alone it would have

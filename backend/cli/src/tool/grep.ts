@@ -11,6 +11,13 @@ import { assertExternalDirectory, sessionToolDirectory } from "./external-direct
 const MAX_LINE_LENGTH = 2000
 const MAX_MATCHES = 100
 
+/** `--no-messages` silences stderr for exactly the failures this branch exists
+ *  to explain, so an empty detail still has to reach the generic text: `??` only
+ *  falls through on null and undefined, never on an empty string. */
+export function searchFailure(missing: string | undefined, detail: string) {
+  return `Search failed: ${missing ?? (detail || "Some paths could not be searched.")}`
+}
+
 async function output(proc: { stdout: ReadableStream<Uint8Array>; kill(): void }, abort: AbortSignal) {
   const reader = proc.stdout.getReader()
   const decoder = new TextDecoder()
@@ -107,12 +114,11 @@ export const GrepTool = Tool.define("grep", {
       // "Some paths could not be searched" sent leads hunting for a permission
       // problem when the path simply was not there, and one of them rebuilt by
       // hand what the missing directory would have told it. Say which it is.
-      const detail = errorOutput.trim()
       const missing = await fs
         .stat(searchPath)
         .then(() => undefined)
         .catch(() => `No such file or directory: ${searchPath}`)
-      throw new Error(`Search failed: ${missing ?? detail ?? "Some paths could not be searched."}`)
+      throw new Error(searchFailure(missing, errorOutput.trim()))
     }
     if (exitCode === 1) {
       return {
