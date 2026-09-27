@@ -519,3 +519,57 @@ describe("tool.read loaded instructions", () => {
     })
   })
 })
+
+describe("tool.read line accounting", () => {
+  test("a newline-terminated file reports the lines it has and no phantom last one", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(path.join(dir, "terminated.txt"), "a\nb\n")
+        await Bun.write(path.join(dir, "unterminated.txt"), "a\nb")
+        await Bun.write(path.join(dir, "single.txt"), "only\n")
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const read = await ReadTool.init()
+        const terminated = await read.execute({ filePath: path.join(tmp.path, "terminated.txt") }, ctx)
+        // The trailing newline ends the last line, it does not start a new one.
+        expect(terminated.output).toContain("(End of file - total 2 lines)")
+        expect(terminated.output).not.toContain("00003|")
+
+        const single = await read.execute({ filePath: path.join(tmp.path, "single.txt") }, ctx)
+        expect(single.output).toContain("(End of file - total 1 lines)")
+        expect(single.output).not.toContain("00002|")
+
+        // A file with no trailing newline keeps its partial last line.
+        const unterminated = await read.execute({ filePath: path.join(tmp.path, "unterminated.txt") }, ctx)
+        expect(unterminated.output).toContain("(End of file - total 2 lines)")
+        expect(unterminated.output).toContain("00002| b")
+      },
+    })
+  })
+
+  test("offset paging agrees with the reported total", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(path.join(dir, "rows.txt"), ["one", "two", "three", ""].join("\n"))
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const read = await ReadTool.init()
+        const first = await read.execute({ filePath: path.join(tmp.path, "rows.txt"), limit: 2 }, ctx)
+        expect(first.output).toContain("File has more lines")
+        const rest = await read.execute({ filePath: path.join(tmp.path, "rows.txt"), offset: 2 }, ctx)
+        // The hint points past the last real line, so offset 3 is empty and
+        // offset 2 is the final line.
+        expect(rest.output).toContain("(End of file - total 3 lines)")
+        const past = await read.execute({ filePath: path.join(tmp.path, "rows.txt"), offset: 3 }, ctx)
+        expect(past.output).not.toContain("00004|")
+        expect(past.output).toContain("(End of file - total 3 lines)")
+      },
+    })
+  })
+})

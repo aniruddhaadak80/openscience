@@ -127,7 +127,12 @@ async function textWindow(filepath: string, offset: number, limit: number) {
     while (!state.stopped) {
       const chunk = await reader.read()
       if (chunk.done) {
-        state.stopped = consume(decoder.decode()) || finishLine()
+        const flushed = consume(decoder.decode())
+        // A trailing newline ends the last line rather than starting one, so
+        // finishing unconditionally appends a phantom empty line: every line
+        // number shifts, including the total reported to the model.
+        const pending = state.line.length > 0 || state.lineWide
+        state.stopped = flushed || (pending && finishLine())
         break
       }
       if (!state.binaryChecked) {

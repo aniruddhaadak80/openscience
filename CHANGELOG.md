@@ -330,6 +330,12 @@ public 50 the old detector named an example's `samples.csv` and the input
   announce it and the workspace could stay out of date until it reloaded. Every
   overflow now raises its own `server.connected` frame, as soon as the previous
   one has been delivered.
+- **Reading a file no longer reports a line that is not there.** A file ending
+  in a newline had a phantom empty last line appended, so a two-line file
+  printed a numbered `00003|` and said `total 3 lines`, and the "read beyond
+  line N" hint pointed one line too far. A trailing newline now ends the last
+  line instead of starting a new one, so the printed numbers, the total and
+  `offset` all agree with the file.
 - **A response that dies before any output recovers on its own.** One
   Extra-high turn on the managed gateway got its first byte, then nothing,
   and read as "Thinking" for eighteen minutes; left alone it would have
