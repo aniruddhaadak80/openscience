@@ -57,9 +57,15 @@ const STEP_BODY: Record<"mac" | "win" | "linux", string> = {
  */
 function FdaChip(): JSX.Element {
   const sdk = useGlobalSDK()
-  const [dismissed, setDismissed] = createSignal(
-    typeof localStorage !== "undefined" && localStorage.getItem(DISMISS_KEY) === "1",
-  )
+  // Same reason as `dismiss`: reading the global is what throws when storage is
+  // blocked, and `typeof` invokes the same getter, so it cannot guard the read.
+  const [dismissed, setDismissed] = createSignal(() => {
+    try {
+      return globalThis.localStorage.getItem(DISMISS_KEY) === "1"
+    } catch {
+      return false
+    }
+  })()
   const [probe, { refetch }] = createResource(() => sdk.url, probeFda)
   const dialog = useDialog()
 

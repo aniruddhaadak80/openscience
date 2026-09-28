@@ -412,6 +412,12 @@ public 50 the old detector named an example's `samples.csv` and the input
   a hundred files and shown only the ones at the root. The tree is now cut on
   either separator and always rendered with `/`, so a listing reads the same on
   every platform.
+- **The workspace starts when browser storage is blocked.** Reading the
+  `localStorage` global is what throws in a sandboxed frame or when storage is
+  denied, and a `typeof` guard runs the very same getter, so the workspace
+  store, the artifact store and the session tabs each took the whole app down on
+  a blank page instead of merely losing persistence. They now read it the way
+  the rest of the workspace already does.
 - **A response that dies before any output recovers on its own.** One
   Extra-high turn on the managed gateway got its first byte, then nothing,
   and read as "Thinking" for eighteen minutes; left alone it would have
