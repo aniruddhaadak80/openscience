@@ -316,6 +316,11 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **Listing files now returns them in a stable order.** Files written at the
+  same moment ΓÇö by a checkout, a build, or a script ΓÇö share a timestamp, so
+  their order came from the filesystem and two identical searches could list
+  the same files differently. Equal timestamps are now ordered by path.
+
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
   "Tool get_code_context_exa not found" as if it were the answer. The tool now
