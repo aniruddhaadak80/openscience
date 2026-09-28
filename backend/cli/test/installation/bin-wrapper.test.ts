@@ -22,12 +22,28 @@ const wrapper = require("../../bin/openscience") as {
 }
 
 describe("npm bin wrapper", () => {
-  test("rejects Linux kernels older than the bundled runtime supports", () => {
+  test("accepts Linux kernels from the documented 3.10 floor and rejects older ones", () => {
     expect(wrapper.parseKernelVersion("3.10.0-1160.el7.x86_64")).toEqual({ major: 3, minor: 10 })
-    expect(wrapper.linuxKernelProblem("linux", "3.10.0-1160.el7.x86_64")).toContain("requires kernel 5.1")
-    expect(wrapper.linuxKernelProblem("linux", "5.1.0")).toBeUndefined()
+
+    // 3.10 is the runtime floor docs/notes/linux-compatibility.md records for
+    // the pinned Bun release. The gate used to demand 5.1, so it refused to
+    // start on CentOS 7, CentOS 8 and every host below them (#772).
+    const accepted = ["3.10.0-1160.el7.x86_64", "4.18.0-348.7.1.el8_5.x86_64", "5.1.0", "6.8.0-generic"]
+    for (const release of accepted) {
+      expect(wrapper.linuxKernelProblem("linux", release)).toBeUndefined()
+      expect(postinstallKernelProblem("linux", release)).toBeUndefined()
+    }
+
+    const rejected = ["2.6.32-754.el6.x86_64", "3.9.0-40-generic"]
+    for (const release of rejected) {
+      expect(wrapper.linuxKernelProblem("linux", release)).toContain("requires kernel 3.10")
+      expect(postinstallKernelProblem("linux", release)).toContain("requires kernel 3.10")
+    }
+
     expect(wrapper.linuxKernelProblem("darwin", "23.0.0")).toBeUndefined()
-    expect(postinstallKernelProblem("linux", "3.10.0-1160.el7.x86_64")).toContain("requires kernel 5.1")
+    expect(postinstallKernelProblem("darwin", "23.0.0")).toBeUndefined()
+    // An unparseable release is not a reason to refuse to start.
+    expect(wrapper.linuxKernelProblem("linux", "not-a-kernel")).toBeUndefined()
   })
 
   test("reports signal exits using shell-compatible status codes", () => {

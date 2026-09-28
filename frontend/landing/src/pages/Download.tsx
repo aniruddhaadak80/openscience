@@ -119,8 +119,8 @@ const FAQ = [
     q: "What are the system requirements?",
     a: (
       <p>
-        macOS 12 or newer, Windows 10 or 11 (x64), or Linux with kernel 5.1 or newer and glibc 2.17 or newer. Additional
-        command line builds are available on the{" "}
+        macOS 12 or newer, Windows 10 or 11 (x64), or Linux with kernel 3.10 or newer and glibc 2.17 or newer.
+        Additional command line builds are available on the{" "}
         <a href={RELEASES} target="_blank" rel="noreferrer">
           releases page
         </a>

@@ -91,8 +91,8 @@ function linuxKernelProblem(platform, release = os.release()) {
   if (!match) return undefined
   const major = Number(match[1])
   const minor = Number(match[2])
-  if (major > 5 || (major === 5 && minor >= 1)) return undefined
-  return `Linux kernel ${release} is unsupported; OpenScience's bundled runtime requires kernel 5.1 or newer`
+  if (major > 3 || (major === 3 && minor >= 10)) return undefined
+  return `Linux kernel ${release} is unsupported; OpenScience's bundled runtime requires kernel 3.10 or newer`
 }
 
 function pageSize(platform) {
@@ -203,7 +203,10 @@ function main() {
     const { platform, arch } = detectPlatformAndArch()
     const kernelProblem = linuxKernelProblem(platform)
     if (kernelProblem) {
-      throw new Error(`${kernelProblem}. CentOS 7's stock 3.10 kernel is not supported.`)
+      throw new Error(
+        `${kernelProblem}. Upgrade the host kernel, or run OpenScience on a newer VM. Kernels from 3.10 to 5.5 run ` +
+          `the bundled runtime with graceful degradation of newer syscalls; 5.6 or newer is recommended.`,
+      )
     }
     const pageSizeProblem = linuxArm64PageSizeProblem(platform, arch, pageSize(platform))
     if (pageSizeProblem) {

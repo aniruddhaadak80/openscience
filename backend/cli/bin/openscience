@@ -5,7 +5,7 @@ const fs = require("fs")
 const path = require("path")
 const os = require("os")
 
-const MIN_LINUX_KERNEL = { major: 5, minor: 1 }
+const MIN_LINUX_KERNEL = { major: 3, minor: 10 }
 
 function parseKernelVersion(release) {
   const match = /^(\d+)\.(\d+)/.exec(release)
@@ -23,7 +23,7 @@ function linuxKernelProblem(platform = os.platform(), release = os.release()) {
   ) {
     return undefined
   }
-  return `Linux kernel ${release} is unsupported. OpenScience's bundled runtime requires kernel 5.1 or newer.`
+  return `Linux kernel ${release} is unsupported. OpenScience's bundled runtime requires kernel 3.10 or newer.`
 }
 
 function detectMusl(platform = os.platform()) {
@@ -131,7 +131,8 @@ function run(target, fallback) {
   if (kernelProblem) {
     console.error(kernelProblem)
     console.error(
-      "Upgrade the host kernel or run OpenScience on a newer VM. CentOS 7's stock 3.10 kernel is not supported.",
+      "Upgrade the host kernel or run OpenScience on a newer VM. Kernels from 3.10 to 5.5 run the bundled " +
+        "runtime with graceful degradation of newer syscalls; 5.6 or newer is recommended.",
     )
     process.exit(1)
   }
