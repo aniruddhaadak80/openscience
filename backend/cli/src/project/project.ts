@@ -128,7 +128,11 @@ export namespace Project {
   }
 
   async function records(worktree: string) {
-    const keys = await Storage.list(["project"]).catch(() => [])
+    // A failure to enumerate is not proof there are no projects. Swallowing it
+    // mints a second identity for a worktree that already has one and skips
+    // adoptLegacy, stranding the folder's sessions under the old id. Storage.list
+    // already rethrows for exactly this reason; let it.
+    const keys = await Storage.list(["project"])
     const projects = await Promise.all(
       keys.map(async (key) => ({
         id: key[key.length - 1],

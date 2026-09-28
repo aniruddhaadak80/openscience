@@ -367,6 +367,11 @@ public 50 the old detector named an example's `samples.csv` and the input
   line was appended after the file's last line — often outside the function the
   model asked for, in a file that still parses and now does something else. A
   hunk with no header still appends.
+- **A folder that cannot be read is no longer treated as a brand-new project.**
+  If the project store could not be listed, that was swallowed and read as "no
+  projects yet", so opening a folder whose record already existed minted a
+  second identity for it and left its history stranded under the old one. The
+  failure now surfaces instead of quietly forking the project.
 - **A slash command keeps the dollar signs you typed.** `$ARGUMENTS` was
   substituted with a string replacement, so `$$` collapsed to `$` (display math
   became inline math), `$&` came back as the placeholder itself and `$'`

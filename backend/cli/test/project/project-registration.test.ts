@@ -142,3 +142,27 @@ describe("project registration boundaries", () => {
     await expect(Storage.read(["session", project.id, id])).rejects.toBeInstanceOf(Storage.NotFoundError)
   })
 })
+
+describe("project registration error handling", () => {
+  test("a failure to enumerate projects is not read as an empty store", async () => {
+    await using tmp = await tmpdir({ git: true })
+    const before = await Storage.list(["project"])
+    // A failure to enumerate is not proof there are no projects. Swallowing it
+    // mints a second identity for a worktree that already has one and strands
+    // the folder's sessions under the old id. The only portable way to provoke
+    // this is to make the read fail, so the read is stubbed; Storage.list's own
+    // rethrow is covered by test/storage/list-errors.test.ts.
+    const real = Storage.list
+    Storage.list = (async (prefix: string[]) => {
+      if (prefix[0] === "project") throw Object.assign(new Error("permission denied"), { code: "EACCES" })
+      return real(prefix)
+    }) as typeof Storage.list
+    try {
+      await expect(Project.fromDirectory(tmp.path)).rejects.toThrow("permission denied")
+    } finally {
+      Storage.list = real
+    }
+    // No second record was minted for the same worktree.
+    expect(await Storage.list(["project"])).toEqual(before)
+  })
+})
