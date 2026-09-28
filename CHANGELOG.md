@@ -316,6 +316,12 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **Truncated output no longer reports one line more than it removed.** Any
+  tool output that ends in a newline was split into an extra empty line, which
+  the preview kept and the count included, so a 100-line file truncated to 10
+  announced 91 lines truncated. The count now matches what was actually
+  dropped. The full output saved to disk is unchanged.
+
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
   "Tool get_code_context_exa not found" as if it were the answer. The tool now
