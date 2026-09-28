@@ -1516,11 +1516,15 @@ export namespace Config {
   export type Info = z.output<typeof Info>
 
   export const global = lazy(async () => {
+    // Same order as CONFIG_FILES and the project-config path: the jsonc file is
+    // the commented-out base and the plain json file is what the app writes, so
+    // json has to merge last. Reading them the other way round let a stale
+    // jsonc shadow the file the UI had just saved.
     let result: Info = pipe(
       {},
       mergeDeep(await loadFile(path.join(Global.Path.config, "config.json"))),
-      mergeDeep(await loadFile(path.join(Global.Path.config, "openscience.json"))),
       mergeDeep(await loadFile(path.join(Global.Path.config, "openscience.jsonc"))),
+      mergeDeep(await loadFile(path.join(Global.Path.config, "openscience.json"))),
     )
 
     const legacy = path.join(Global.Path.config, "config")
@@ -1532,7 +1536,9 @@ export namespace Config {
       })
         .then(async (mod) => {
           const { provider, model, ...rest } = mod.default
-          const files = ["config.json", "openscience.json", "openscience.jsonc"].map((name) =>
+          // Same order as the merge above, so a migration that rewrites
+          // config.json carries the same values the live loader would pick.
+          const files = ["config.json", "openscience.jsonc", "openscience.json"].map((name) =>
             path.join(Global.Path.config, name),
           )
           await CredentialLifecycle.serialized(async () => {
