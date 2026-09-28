@@ -316,6 +316,11 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **Installed skills honour their manifest's entry list on Windows.** Which
+  installed skills count as commands was decided by splitting the path on `/`,
+  which never matched on Windows, so every installed skill appeared as a
+  command whether or not the manifest listed it — including the internal
+  helpers a URL install marks as not yours to run.
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
   "Tool get_code_context_exa not found" as if it were the answer. The tool now
