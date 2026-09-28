@@ -148,14 +148,19 @@ export namespace Config {
     result.mode = result.mode || {}
     result.plugin = result.plugin || []
 
+    // Filesystem.up yields the nearest directory first and the merge below is
+    // later-wins, so walking the list as returned let the worktree-wide
+    // .openscience override the one written for the directory the run is in.
     const projectDirectories = !Flag.OPENSCIENCE_DISABLE_PROJECT_CONFIG
-      ? await Array.fromAsync(
-          Filesystem.up({
-            targets: [".openscience", ".synsc"],
-            start: Instance.directory,
-            stop: Instance.worktree,
-          }),
-        )
+      ? (
+          await Array.fromAsync(
+            Filesystem.up({
+              targets: [".openscience", ".synsc"],
+              start: Instance.directory,
+              stop: Instance.worktree,
+            }),
+          )
+        ).toReversed()
       : []
     const projectSet = new Set(projectDirectories.map((dir) => path.resolve(dir)))
     const homeDirectories = Flag.OPENSCIENCE_CONFIG_DIR

@@ -334,6 +334,11 @@ public 50 the old detector named an example's `samples.csv` and the input
   base short overall. A single-base position was rejected outright and answered
   by a full-text search instead, so a single-nucleotide lookup came back with
   whatever the search happened to match.
+- **A `.openscience` folder closer to your work now wins over the one above
+  it.** A repository-wide config overrode the one written for the directory you
+  are working in, so a setting you had overridden for a subtree kept applying.
+  The nearest folder takes precedence, as the project's own config files
+  already did.
 - **A dropped connection no longer pauses an Ace turn after a minute.** A
   turn checks the Wallet balance before it sends anything, and a check that
   could not reach the Wallet spent the five quick retries meant for provider
