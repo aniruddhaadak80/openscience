@@ -316,6 +316,12 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **Asking no questions at all is now refused instead of answered.** An empty
+  question list slipped past the check that requires a recommended option, so
+  the turn either reported an assumption it had not recorded or opened a prompt
+  card with nothing on it and waited. An empty list is now refused with a note
+  to retry.
+
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
   "Tool get_code_context_exa not found" as if it were the answer. The tool now
