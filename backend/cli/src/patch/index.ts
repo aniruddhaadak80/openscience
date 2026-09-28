@@ -390,8 +390,13 @@ export namespace Patch {
 
       // Handle pure addition (no old lines)
       if (chunk.old_lines.length === 0) {
-        const insertionIdx =
-          originalLines.length > 0 && originalLines[originalLines.length - 1] === ""
+        // The @@ header already resolved where this belongs, so use it.
+        // Appending instead drops the line at end of file, outside the block
+        // the model named, and the file keeps working while doing something
+        // else. An unanchored hunk still falls back to the end.
+        const insertionIdx = chunk.change_context
+          ? lineIndex
+          : originalLines.length > 0 && originalLines[originalLines.length - 1] === ""
             ? originalLines.length - 1
             : originalLines.length
         replacements.push([insertionIdx, 0, chunk.new_lines])

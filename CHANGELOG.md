@@ -362,6 +362,11 @@ public 50 the old detector named an example's `samples.csv` and the input
   read from `{file:prompt.md}` lost half of every `$$` (display math became
   inline math), and `$&`, `` $` `` or `$'` in the file were replaced with
   parts of the config value. The file's text is now inserted verbatim.
+- **An inserted line lands where the patch said, not at the end of the file.** A
+  hunk that only adds lines ignored the `@@` header naming the place, so the
+  line was appended after the file's last line — often outside the function the
+  model asked for, in a file that still parses and now does something else. A
+  hunk with no header still appends.
 - **A slash command keeps the dollar signs you typed.** `$ARGUMENTS` was
   substituted with a string replacement, so `$$` collapsed to `$` (display math
   became inline math), `$&` came back as the placeholder itself and `$'`

@@ -924,3 +924,40 @@ describe("tool.apply_patch legacy session authority", () => {
     })
   })
 })
+
+describe("tool.apply_patch insert-only hunks", () => {
+  test("an insert-only hunk lands after the context it names, not at end of file", async () => {
+    await using fixture = await tmpdir({ git: true })
+    const { ctx } = makeCtx()
+    await Instance.provide({
+      directory: fixture.path,
+      fn: async () => {
+        const target = path.join(fixture.path, "m.py")
+        const before = "import os\n\ndef main():\n    print(1)\n\ndef cleanup():\n    pass\n\nmain()\n"
+        await fs.writeFile(target, before, "utf-8")
+        // The @@ header names where the line belongs. Appending instead drops
+        // it after the top-level call, outside every function.
+        const patchText = "*** Begin Patch\n*** Update File: m.py\n@@ def main():\n+    print(2)\n*** End Patch"
+        await execute({ patchText }, ctx)
+        expect(await fs.readFile(target, "utf-8")).toBe(
+          "import os\n\ndef main():\n    print(2)\n    print(1)\n\ndef cleanup():\n    pass\n\nmain()\n",
+        )
+      },
+    })
+  })
+
+  test("an insert-only hunk with no context still appends", async () => {
+    await using fixture = await tmpdir({ git: true })
+    const { ctx } = makeCtx()
+    await Instance.provide({
+      directory: fixture.path,
+      fn: async () => {
+        const target = path.join(fixture.path, "n.txt")
+        await fs.writeFile(target, "one\ntwo\n", "utf-8")
+        const patchText = "*** Begin Patch\n*** Update File: n.txt\n@@\n+three\n*** End Patch"
+        await execute({ patchText }, ctx)
+        expect(await fs.readFile(target, "utf-8")).toBe("one\ntwo\nthree\n")
+      },
+    })
+  })
+})
