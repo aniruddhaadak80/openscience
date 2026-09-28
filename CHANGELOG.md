@@ -401,6 +401,12 @@ public 50 the old detector named an example's `samples.csv` and the input
   projects yet", so opening a folder whose record already existed minted a
   second identity for it and left its history stranded under the old one. The
   failure now surfaces instead of quietly forking the project.
+- **Two runs can no longer claim the same execution number.** A run recorded
+  without a journal ordinal — a local shell run — took the next number in the
+  session, which is the number the durable journal had already given the
+  following kernel execution. The history then showed two records as "execution
+  2", contradicting the journal about which result was the second one, and
+  anything keying on the session and number saw a collision.
 - **A slash command keeps the dollar signs you typed.** `$ARGUMENTS` was
   substituted with a string replacement, so `$$` collapsed to `$` (display math
   became inline math), `$&` came back as the placeholder itself and `$'`
