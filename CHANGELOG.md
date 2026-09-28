@@ -401,6 +401,15 @@ public 50 the old detector named an example's `samples.csv` and the input
   projects yet", so opening a folder whose record already existed minted a
   second identity for it and left its history stranded under the old one. The
   failure now surfaces instead of quietly forking the project.
+- **A shortened long option no longer looks safer than the flag it stands
+  for.** `sed --in-p` edits in place, `sort --outp` writes its output file and
+  `tar --to-c` runs a command for every extracted file — all accepted by the GNU
+  tools — but the risk classifier matched exact spellings only, so these were
+  treated as read-only and skipped the confirmation a destructive command always
+  gets. The option name is now compared ahead of any `=value`, and a prefix
+  counts as reaching the flag it abbreviates. That widening is confined to the
+  checks where a hit makes a command risky, so it cannot promote `unzip --l` into
+  a listing or affect `tsc --noEmit`, which is not `--noemit`.
 - **A slash command keeps the dollar signs you typed.** `$ARGUMENTS` was
   substituted with a string replacement, so `$$` collapsed to `$` (display math
   became inline math), `$&` came back as the placeholder itself and `$'`

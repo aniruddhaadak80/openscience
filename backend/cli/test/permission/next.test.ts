@@ -1,4 +1,4 @@
-import { test, expect } from "bun:test"
+import { test, expect, describe } from "bun:test"
 import os from "os"
 import { PermissionNext } from "../../src/permission/next"
 import { Instance } from "../../src/project/instance"
@@ -1490,5 +1490,33 @@ test("widening to Full access clears pending routine prompts but keeps explicit 
       await PermissionNext.reply({ requestID: "permission_widen_pinned", reply: "reject" })
       await expect(pinned).rejects.toBeInstanceOf(PermissionNext.RejectedError)
     },
+  })
+})
+
+describe("ShellRisk long option abbreviation", () => {
+  // GNU tools parse options with getopt_long, which accepts any unambiguous
+  // prefix of a long option, so an abbreviated spelling reaches the same
+  // destructive flag. Verified against GNU sed 4.9, coreutils sort 8.32 and
+  // GNU tar 1.35: `sed --in-p` edits in place, `sort --outp` writes its output
+  // file, and `tar --to-c 'cmd'` runs cmd per extracted file. Spelling the flag
+  // differently must not lower the risk level.
+  test("an abbreviated long option still classifies as risky", () => {
+    const risky = ["sed --in-p 's/a/b/' notes.txt", "sort --outp sorted.txt", "tar --to-c 'id' -cf out.tar ."]
+    for (const command of risky) {
+      expect(ShellRisk.classify(command), command).toMatchObject({ level: "risky" })
+    }
+  })
+
+  test("short options are not abbreviations and stay unaffected", () => {
+    // GNU find rejects `-del` as an unknown predicate, so its short-flag
+    // blocklist is not bypassable by shortening and is left alone.
+    expect(ShellRisk.classify("find . -type f -del")).toMatchObject({ level: "contained" })
+  })
+
+  test("the read-only spellings stay contained", () => {
+    const contained = ["find . -type f -name '*.ts'", "sed -n '1,20p' package.json", "sort input.txt"]
+    for (const command of contained) {
+      expect(ShellRisk.classify(command), command).toMatchObject({ level: "contained" })
+    }
   })
 })

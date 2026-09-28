@@ -217,8 +217,22 @@ export namespace ShellRisk {
     return value.replaceAll("\\", "/")
   }
 
+  /** GNU tools parse options with getopt_long, which accepts any unambiguous
+   *  prefix of a long option: `sed --in-p` edits in place, `sort --outp` writes
+   *  its output file and `tar --to-c 'cmd'` runs cmd per extracted file. A short
+   *  option is never an abbreviation, so those keep exact matching. An
+   *  abbreviation that cannot be resolved still reaches the same tool, and
+   *  over-refusing is the safe direction for an approval floor. */
   function has(args: string[], ...values: string[]) {
-    return args.some((arg) => values.includes(arg) || values.some((value) => arg.startsWith(`${value}=`)))
+    return args.some((arg) => {
+      const option = arg.toLowerCase()
+      return values.some((value) => {
+        if (option === value || option.startsWith(`${value}=`)) return true
+        if (!option.startsWith("--") || !value.startsWith("--")) return false
+        const prefix = option.slice(2)
+        return prefix.length > 0 && value.slice(2).startsWith(prefix)
+      })
+    })
   }
 
   function lex(source: string): Token[] | Result {
