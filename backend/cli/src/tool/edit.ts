@@ -636,6 +636,8 @@ export function replace(content: string, oldString: string, newString: string, r
   }
 
   let notFound = true
+  const indent = (value: string) => /^[ \t]*/.exec(value)?.[0] ?? ""
+  const quoted = indent(oldString).length
 
   for (const replacer of [
     SimpleReplacer,
@@ -648,7 +650,14 @@ export function replace(content: string, oldString: string, newString: string, r
     ContextAwareReplacer,
     MultiOccurrenceReplacer,
   ]) {
-    for (const search of replacer(content, oldString)) {
+    for (const candidate of replacer(content, oldString)) {
+      // A fuzzy candidate can span leading whitespace the model never quoted,
+      // and the replacement was written for the text it did quote. Substituting
+      // the whole candidate would delete that padding and turn valid code into
+      // an IndentationError, so match the text itself and let the file keep the
+      // indentation it already had. Compared against the quoted text rather
+      // than the replacement, so a deliberate outdent still applies.
+      const search = indent(candidate).length > quoted ? candidate.trimStart() : candidate
       const index = content.indexOf(search)
       if (index === -1) continue
       notFound = false

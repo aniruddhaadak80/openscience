@@ -14,3 +14,44 @@ test("replaceAll writes the replacement literally, including $ sequences", () =>
 test("single replacement is unchanged and still literal", () => {
   expect(replace("price\n", "price", "cost $$", false)).toBe("cost $$\n")
 })
+
+test("a fuzzy line match keeps the indentation it matched", () => {
+  // Models routinely re-quote a line with normalised internal spacing. That
+  // single divergence hands the edit to the whole-line branch, and the
+  // replacement was written for the text the model quoted, not the padding it
+  // never saw — so substituting it deletes the indentation.
+  const file = [
+    "class A:",
+    "    def run(self):",
+    "        if self.ok:",
+    "            return x",
+    "",
+    "class B:",
+    "    pass",
+    "",
+  ].join("\n")
+  expect(replace(file, "return  x", "return 42")).toBe(
+    [
+      "class A:",
+      "    def run(self):",
+      "        if self.ok:",
+      "            return 42",
+      "",
+      "class B:",
+      "    pass",
+      "",
+    ].join("\n"),
+  )
+})
+
+test("an explicit de-indent is still applied", () => {
+  // The guard must compare against what the model quoted, not against the
+  // replacement, or a deliberate outdent would be refused.
+  const file = "def f():\n    if a:\n        return x\n"
+  expect(replace(file, "        return x", "    return x")).toBe("def f():\n    if a:\n    return x\n")
+})
+
+test("an indented line quoted with its indentation is replaced exactly", () => {
+  const file = "def f():\n    if a:\n        return x\n"
+  expect(replace(file, "        return x", "        return 42")).toBe("def f():\n    if a:\n        return 42\n")
+})
