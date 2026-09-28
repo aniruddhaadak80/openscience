@@ -517,7 +517,11 @@ export namespace Config {
   export const McpLocal = z
     .object({
       type: z.literal("local").describe("Type of MCP server connection"),
-      command: z.string().array().describe("Command and arguments to run the MCP server"),
+      command: z
+        .string()
+        .array()
+        .min(1, 'A local MCP server needs a command to run, for example ["npx", "-y", "my-mcp-server"]')
+        .describe("Command and arguments to run the MCP server"),
       environment: z
         .record(z.string(), z.string())
         .optional()

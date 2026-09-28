@@ -316,6 +316,10 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **A local MCP server entry without a command is now rejected.** The command
+  list could be empty and the connection was then launched with no executable
+  to run. It is now reported at the config entry, with an example.
+
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
   "Tool get_code_context_exa not found" as if it were the answer. The tool now
