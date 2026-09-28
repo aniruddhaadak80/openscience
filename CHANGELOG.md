@@ -316,6 +316,10 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **A requirements file with a comment or a blank line can now be installed.**
+  Both were counted as package pins, so the check confirming every pinned wheel
+  was downloaded rejected the file and the task environment was never built.
+
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
   "Tool get_code_context_exa not found" as if it were the answer. The tool now
