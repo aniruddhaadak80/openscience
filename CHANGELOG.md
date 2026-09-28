@@ -316,6 +316,12 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **A web fetch that selected a path of only dots no longer returns the whole
+  page.** A selection like `.` or `..` names no field, so the fetch handed back
+  the entire document and still reported "selected 1 path", with the "not found"
+  note that would have pointed at the mistake suppressed. Such a selection now
+  reports the path as not found, like any other bad one.
+
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
   "Tool get_code_context_exa not found" as if it were the answer. The tool now
