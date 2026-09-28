@@ -328,6 +328,12 @@ public 50 the old detector named an example's `samples.csv` and the input
   with its read tool; routes that accept documents still receive the file too.
   PDF text extraction no longer needs poppler or PyMuPDF on the machine: a
   bundled pdf.js reads the text when neither is installed.
+- **A UCSC interval now returns the sequence that was asked for.** A browser
+  position like `chr1:100000-100010` is 1-based and inclusive, but the API takes
+  a 0-relative start, so every lookup was off by one base at the start and one
+  base short overall. A single-base position was rejected outright and answered
+  by a full-text search instead, so a single-nucleotide lookup came back with
+  whatever the search happened to match.
 - **A dropped connection no longer pauses an Ace turn after a minute.** A
   turn checks the Wallet balance before it sends anything, and a check that
   could not reach the Wallet spent the five quick retries meant for provider
