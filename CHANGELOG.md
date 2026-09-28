@@ -316,6 +316,11 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **Importing a broken session file now says so and exits non-zero.** A file
+  that was not valid JSON was reported as "File not found", sending you looking
+  for a path you had just typed, and the command still exited successfully. It
+  now distinguishes a missing file from an unreadable or wrongly shaped one.
+
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
   "Tool get_code_context_exa not found" as if it were the answer. The tool now
