@@ -316,6 +316,11 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **`--port=5555` is no longer ignored in favour of a configured port.** The
+  check for an explicitly passed port only matched the space-separated
+  spelling, so the `=` form silently bound to the port in your config instead.
+  Both spellings now mean the same thing.
+
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
   "Tool get_code_context_exa not found" as if it were the answer. The tool now
