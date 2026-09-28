@@ -83,10 +83,31 @@ async function listDirectory(dir: string): Promise<ListResult> {
   }
 }
 
-function expandPath(input: unknown): string {
+/** A `file://` URL to a local path. `URL.pathname` keeps the leading slash on a
+ * Windows drive URL ("/C:/Users/me"), so decoding it and resolving it verbatim
+ * produced "C:\C:\Users\me"; and `decodeURIComponent` throws `URIError` on a
+ * stray percent, which surfaced as a failed request rather than a path that
+ * simply does not exist. Bun has no `URL.filePath`, so the drive prefix is
+ * stripped here and a malformed escape is left as written. */
+function fromFileUrl(raw: string): string {
+  const pathname = new URL(raw).pathname
+  // Each escape is decoded on its own, so one malformed percent cannot discard
+  // the rest of a path that is otherwise fine.
+  const decoded = pathname.replace(/%[0-9a-f]{2}/gi, (escape) => {
+    try {
+      return decodeURIComponent(escape)
+    } catch {
+      return escape
+    }
+  })
+  // "/C:/rest" is the URL spelling of "C:\rest".
+  return /^\/[a-z]:[\\/]/i.test(decoded) ? decoded.slice(1) : decoded
+}
+
+export function expandPath(input: unknown): string {
   const raw = String(input ?? "").trim()
   if (!raw) return ""
-  const withoutFileUrl = raw.startsWith("file://") ? decodeURIComponent(new URL(raw).pathname) : raw
+  const withoutFileUrl = raw.startsWith("file://") ? fromFileUrl(raw) : raw
   if (withoutFileUrl === "~") return HOME
   if (withoutFileUrl.startsWith("~/")) return path.join(HOME, withoutFileUrl.slice(2))
   return path.resolve(withoutFileUrl)

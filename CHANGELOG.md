@@ -316,6 +316,10 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **Picking a folder by its `file://` link works on Windows.** A link to a
+  drive path was turned into a doubled drive letter, so the folder could not be
+  selected, and a stray `%` in a path failed the whole request.
+
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
   "Tool get_code_context_exa not found" as if it were the answer. The tool now
