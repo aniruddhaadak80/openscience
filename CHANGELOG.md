@@ -316,6 +316,10 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **A broad skill search now says how many matches it left out.** Searching
+  returned the best eight with nothing to indicate there were more, which read
+  as the whole set. It now reports the total and suggests narrowing the query.
+
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
   "Tool get_code_context_exa not found" as if it were the answer. The tool now
