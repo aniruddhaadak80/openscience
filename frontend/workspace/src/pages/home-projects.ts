@@ -44,7 +44,9 @@ function uniqueProjects(projects: ProjectRecord[]) {
 
 function folderName(worktree: string) {
   if (worktree === "/") return "/"
-  const parts = worktree.split("/").filter(Boolean)
+  // The server reports native separators, so a Windows worktree arrives with
+  // backslashes and a forward-slash split would return the whole path.
+  const parts = worktree.split(/[\\/]/).filter(Boolean)
   return parts.at(-1) ?? worktree
 }
 

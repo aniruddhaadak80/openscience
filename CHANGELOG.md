@@ -339,6 +339,10 @@ public 50 the old detector named an example's `samples.csv` and the input
   are working in, so a setting you had overridden for a subtree kept applying.
   The nearest folder takes precedence, as the project's own config files
   already did.
+- **A project without a name shows its folder again on Windows.** The fallback
+  label was taken by splitting the path on `/`, so on a Windows server the
+  project list, the workbench header, and the command palette showed the full
+  path where the rest of the interface shows just the folder.
 - **A dropped connection no longer pauses an Ace turn after a minute.** A
   turn checks the Wallet balance before it sends anything, and a check that
   could not reach the Wallet spent the five quick retries meant for provider
