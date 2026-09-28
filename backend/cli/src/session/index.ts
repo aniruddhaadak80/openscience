@@ -740,6 +740,16 @@ export namespace Session {
     return count
   }
 
+  /** Routes whose SDK reports `outputTokens` without the reasoning it billed,
+   *  so `TokenUsage`'s "output already includes reasoning" contract does not
+   *  hold for them until it is restored. `@ai-sdk/google` and
+   *  `google-vertex` 2.0.52 map `outputTokens` to Gemini's
+   *  `candidatesTokenCount` and report thinking separately as
+   *  `thoughtsTokenCount`; `@ai-sdk/xai` 2.0.51 adds reasoning on top of
+   *  `completion_tokens`. OpenAI, DeepSeek, OpenRouter and the other
+   *  OpenAI-compatible routes already report an inclusive `outputTokens`. */
+  const REASONING_OUTSIDE_OUTPUT = new Set(["@ai-sdk/google", "@ai-sdk/google-vertex", "@ai-sdk/xai"])
+
   export const getUsage = fn(
     z.object({
       model: z.custom<Provider.Model>(),
@@ -792,10 +802,15 @@ export namespace Session {
         /^gpt-(?:5\.[6-9]|[6-9])/.test(input.model.api.id.toLowerCase())
       const adjustedInputTokens = implicitWrite ? 0 : uncachedInputTokens
       const adjustedCacheWriteTokens = implicitWrite ? uncachedInputTokens : cacheWriteInputTokens
+      const outputTokens = safe(input.usage.outputTokens ?? 0)
+      const reasoningTokens = safe(input.usage?.reasoningTokens ?? 0)
       const tokens = {
         input: safe(adjustedInputTokens),
-        output: safe(input.usage.outputTokens ?? 0),
-        reasoning: safe(input.usage?.reasoningTokens ?? 0),
+        // TokenUsage treats reasoning as a subset of output, so a route that
+        // bills it separately is folded in here; leaving it out dropped Gemini
+        // thinking tokens from every total and under-billed the catalog cost.
+        output: REASONING_OUTSIDE_OUTPUT.has(input.model.api?.npm) ? outputTokens + reasoningTokens : outputTokens,
+        reasoning: reasoningTokens,
         cache: {
           write: safe(adjustedCacheWriteTokens),
           read: safe(cacheReadInputTokens),

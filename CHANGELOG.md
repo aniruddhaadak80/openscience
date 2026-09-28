@@ -316,6 +316,16 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **The session spend figure no longer counts reasoning tokens twice, and no
+  longer drops them for Gemini.** A reasoning model's reasoning tokens are a
+  subset of its output rather than an extra quantity, so adding them on top of
+  the output figure inflated the session total on every OpenAI-compatible route.
+  That is now counted once. Routes that bill reasoning outside the output figure
+  — Gemini, whose SDK reports thinking as a separate `thoughtsTokenCount`, and
+  xAI — are folded back in when the usage is recorded, so their thinking tokens
+  reach the session total and the catalog cost, which previously billed them at
+  zero.
+
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
   "Tool get_code_context_exa not found" as if it were the answer. The tool now

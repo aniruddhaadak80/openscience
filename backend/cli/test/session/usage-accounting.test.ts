@@ -52,6 +52,55 @@ describe("Session.getUsage cost/token accounting", () => {
     })
   }
 
+  test("a route that bills reasoning outside output folds it back in", () => {
+    // `@ai-sdk/google` 2.0.52 maps outputTokens to Gemini's
+    // candidatesTokenCount and reports thinking as a separate
+    // thoughtsTokenCount, so the SDK's 500 excludes the 100 it billed.
+    // TokenUsage treats reasoning as a subset of output, so storing 500
+    // dropped Gemini thinking from every total and from the catalog cost,
+    // which is billed off `output`.
+    const gemini = (): any => ({ ...model(), api: { id: "gemini-3-pro", npm: "@ai-sdk/google" } })
+    const result = Session.getUsage({
+      model: gemini(),
+      usage: { inputTokens: 1_000, outputTokens: 500, reasoningTokens: 100, cachedInputTokens: 200 } as any,
+      metadata: { google: {} } as any,
+    })
+    expect(result.tokens).toEqual({
+      input: 800,
+      output: 600,
+      reasoning: 100,
+      cache: { read: 200, write: 0 },
+    })
+    expect(TokenUsage.uncached(result.tokens)).toBe(1_400)
+    expect(TokenUsage.total(result.tokens)).toBe(1_600)
+    expect(result.cost).toBeCloseTo((800 * 3 + 600 * 15 + 200 * 0.3) / 1_000_000, 8)
+  })
+
+  test("xAI is folded in on the same terms as Google", () => {
+    // `@ai-sdk/xai` 2.0.51 adds reasoning on top of completion_tokens.
+    const grok = (): any => ({ ...model(), api: { id: "grok-4", npm: "@ai-sdk/xai" } })
+    const result = Session.getUsage({
+      model: grok(),
+      usage: { inputTokens: 1_000, outputTokens: 500, reasoningTokens: 100, cachedInputTokens: 0 } as any,
+    })
+    expect(result.tokens.output).toBe(600)
+    expect(result.tokens.reasoning).toBe(100)
+  })
+
+  test("an OpenAI-compatible route keeps its inclusive output untouched", () => {
+    // OpenAI, DeepSeek, OpenRouter and the rest already report outputTokens
+    // with reasoning inside it, so folding again would double count.
+    const openai = (): any => ({ ...model(), api: { id: "gpt-6-astra", npm: "@ai-sdk/openai" } })
+    const result = Session.getUsage({
+      model: openai(),
+      usage: { inputTokens: 1_000, outputTokens: 500, reasoningTokens: 100, cachedInputTokens: 0 } as any,
+      metadata: { openai: {} } as any,
+    })
+    expect(result.tokens.output).toBe(500)
+    expect(result.tokens.reasoning).toBe(100)
+    expect(TokenUsage.uncached(result.tokens)).toBe(1_500)
+  })
+
   test("the native OpenAI route bills a GPT-5.6+ prompt's uncached remainder as the implicit cache write", () => {
     const astra = (): any => ({
       providerID: "openai",
