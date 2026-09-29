@@ -47,11 +47,7 @@ export function presetPaneWidth(
   return paneWidthForWorkspace((workspace - sidebar) * (preset === "inspector" ? 0.7 : 0.3), workspace, sidebar)
 }
 
-export function readPaneWidth(
-  key: string,
-  storage?: Pick<Storage, "getItem" | "setItem">,
-  legacy: string[] = [],
-) {
+export function readPaneWidth(key: string, storage?: Pick<Storage, "getItem" | "setItem">, legacy: string[] = []) {
   const value = (() => {
     try {
       // Resolved here rather than as a default argument: a default parameter is

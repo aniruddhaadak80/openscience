@@ -116,12 +116,14 @@ export const { use: useTheme, provider: ThemeProvider } = createSimpleContext({
       const savedScheme = getStoredColorScheme()
       if (lockedTheme) {
         setStore("themeId", lockedTheme)
-        const storage = storageOrNothing()
-        if (storage) {
-          storage.setItem(STORAGE_KEYS.THEME_ID, lockedTheme)
-          storage.removeItem(STORAGE_KEYS.LEGACY_THEME_CSS_LIGHT)
-          storage.removeItem(STORAGE_KEYS.LEGACY_THEME_CSS_DARK)
-        }
+        // Guarded in place rather than routed through `storageOrNothing`: the
+        // theme-lock test pins these exact calls, and the same idiom is already
+        // used above for the CSS cache.
+        try {
+          localStorage.setItem(STORAGE_KEYS.THEME_ID, lockedTheme)
+          localStorage.removeItem(STORAGE_KEYS.LEGACY_THEME_CSS_LIGHT)
+          localStorage.removeItem(STORAGE_KEYS.LEGACY_THEME_CSS_DARK)
+        } catch {}
       } else if (savedTheme && store.themes[savedTheme]) {
         setStore("themeId", savedTheme)
       }
