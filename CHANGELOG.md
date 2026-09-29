@@ -328,6 +328,9 @@ public 50 the old detector named an example's `samples.csv` and the input
   a fresh user-visible authorization instead. Credentials stored before this
   release are bound on their next successful refresh. Reported by Saku0512
   (CWE-522).
+- **A file's folder and type are read from its name, not from its path.** A
+  file with no folder of its own was shown as living in the filesystem root,
+  and a file with no extension was treated as if its whole name were one.
 - **Listing files now returns them in a stable order.** Files written at the
   same moment — by a checkout, a build, or a script — share a timestamp, so
   their order came from the filesystem and two identical searches could list
