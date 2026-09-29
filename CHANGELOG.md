@@ -324,7 +324,10 @@ public 50 the old detector named an example's `samples.csv` and the input
   then matched with progressively looser passes, so an edit could land somewhere
   other than where it was asked for. Both shapes are now rejected as malformed
   instead of applied. A line that is merely indented is still read as a context
-  line, which is what the format means.
+  line, which is what the format means, and a bare empty line is still blank
+  context, so a blank line before `*** End Patch` or the next file keeps
+  applying. An update section with neither a hunk nor a `*** Move to:` is
+  rejected too.
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
   "Tool get_code_context_exa not found" as if it were the answer. The tool now

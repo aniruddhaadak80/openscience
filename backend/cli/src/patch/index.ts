@@ -134,6 +134,7 @@ export namespace Patch {
         const oldLines: string[] = []
         const newLines: string[] = []
         let isEndOfFile = false
+        let blanks = 0
 
         // Parse change lines
         while (i < lines.length && !lines[i].startsWith("@@") && !lines[i].startsWith("***")) {
@@ -144,6 +145,17 @@ export namespace Patch {
             i++
             break
           }
+
+          if (changeLine === "" || changeLine === "\r") {
+            // The format reads a bare empty line as blank context: models drop the
+            // single space on an empty context line routinely.
+            oldLines.push("")
+            newLines.push("")
+            blanks++
+            i++
+            continue
+          }
+          blanks = 0
 
           if (changeLine.startsWith(" ")) {
             // Keep line - appears in both old and new
@@ -163,13 +175,18 @@ export namespace Patch {
             // model never named. An INDENTED line is a different case and stays a
             // context line: `   x` and a lost-prefix `    x` are the same bytes.
             throw new Error(
-              `Malformed patch for ${filePath}: line ${i + 1} of the hunk has no leading ` +
+              `Malformed patch for ${filePath}: line ${i + 1} of the patch has no leading ` +
                 `" ", "-" or "+". Write context, removed and added lines with that prefix.`,
             )
           }
 
           i++
         }
+
+        // Bare blank lines that end a hunk are separators before the next section
+        // or `*** End Patch`, not context the file has to contain.
+        oldLines.splice(oldLines.length - blanks)
+        newLines.splice(newLines.length - blanks)
 
         chunks.push({
           old_lines: oldLines,
@@ -268,6 +285,12 @@ export namespace Patch {
         i = header.nextIdx
       } else if (lines[i].startsWith("*** Update File:")) {
         const { chunks, nextIdx } = parseUpdateFileChunks(lines, header.nextIdx, header.filePath)
+        if (chunks.length === 0 && !header.movePath) {
+          throw new Error(
+            `Malformed patch for ${header.filePath}: the update section has no @@ hunk and no ` +
+              `"*** Move to:", so it would change nothing. Add a hunk, or a move for a rename.`,
+          )
+        }
         hunks.push({
           type: "update",
           path: header.filePath,
