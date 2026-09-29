@@ -20,6 +20,8 @@ import { spawn } from "child_process"
 import fs from "fs/promises"
 import os from "os"
 import path from "path"
+import { fileURLToPath } from "url"
+import { iife } from "@synsci/util/iife"
 import { lazy } from "@synsci/util/lazy"
 import { projectSelection } from "../project-selection"
 import { probeProtectedFolderAccess } from "../../file/protected-folder-access"
@@ -83,25 +85,31 @@ async function listDirectory(dir: string): Promise<ListResult> {
   }
 }
 
-/** A `file://` URL to a local path. `URL.pathname` keeps the leading slash on a
- * Windows drive URL ("/C:/Users/me"), so decoding it and resolving it verbatim
- * produced "C:\C:\Users\me"; and `decodeURIComponent` throws `URIError` on a
- * stray percent, which surfaced as a failed request rather than a path that
- * simply does not exist. Bun has no `URL.filePath`, so the drive prefix is
- * stripped here and a malformed escape is left as written. */
+/** A `file://` URL to a local path. `fileURLToPath` gives "C:\x" and
+ * "\\server\share" on Windows and decodes multi-byte escapes; a stray percent
+ * is escaped first because it throws there. It still throws on a remote host
+ * off Windows and on an encoded slash, and Bun returns "" for an escape that is
+ * not UTF-8, so those fall back to the decoded pathname with anything
+ * undecodable left as written. */
 function fromFileUrl(raw: string): string {
-  const pathname = new URL(raw).pathname
-  // Each escape is decoded on its own, so one malformed percent cannot discard
-  // the rest of a path that is otherwise fine.
-  const decoded = pathname.replace(/%[0-9a-f]{2}/gi, (escape) => {
+  const url = new URL(raw.replace(/%(?![0-9a-f]{2})/gi, "%25"))
+  const direct = iife(() => {
     try {
-      return decodeURIComponent(escape)
+      return fileURLToPath(url)
     } catch {
-      return escape
+      return ""
     }
   })
-  // "/C:/rest" is the URL spelling of "C:\rest".
-  return /^\/[a-z]:[\\/]/i.test(decoded) ? decoded.slice(1) : decoded
+  if (direct) return direct
+  const decoded = url.pathname.replace(/(?:%[0-9a-f]{2})+/gi, (escapes) => {
+    try {
+      return decodeURIComponent(escapes)
+    } catch {
+      return escapes
+    }
+  })
+  // "/C:/rest" is the URL spelling of "C:\rest"; elsewhere it is a real path.
+  return process.platform === "win32" && /^\/[a-z]:[\\/]/i.test(decoded) ? decoded.slice(1) : decoded
 }
 
 export function expandPath(input: unknown): string {

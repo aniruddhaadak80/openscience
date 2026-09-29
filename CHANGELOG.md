@@ -317,8 +317,9 @@ public 50 the old detector named an example's `samples.csv` and the input
 ### Fixed
 
 - **Picking a folder by its `file://` link works on Windows.** A link to a
-  drive path was turned into a doubled drive letter, so the folder could not be
-  selected, and a stray `%` in a path failed the whole request.
+  drive path was turned into a doubled drive letter and a link to a network
+  share lost its server, so the folder could not be selected. A stray `%` in a
+  link no longer fails the whole request on any platform.
 
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
