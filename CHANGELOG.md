@@ -315,6 +315,10 @@ public 50 the old detector named an example's `samples.csv` and the input
   worker that exists.
 
 ### Fixed
+- **Entering a session no longer rewinds a running conversation's text.** While
+  the agent was streaming, a snapshot taken as you arrived could overwrite what
+  had already arrived, and a message deleted mid-stream could reappear. The check
+  meant to prevent that was reading its change list under the wrong key.
 
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
