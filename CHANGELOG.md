@@ -322,9 +322,11 @@ public 50 the old detector named an example's `samples.csv` and the input
   the output figure inflated the session total on every OpenAI-compatible route.
   That is now counted once. Routes that bill reasoning outside the output figure
   — Gemini, whose SDK reports thinking as a separate `thoughtsTokenCount`, and
-  xAI — are folded back in when the usage is recorded, so their thinking tokens
-  reach the session total and the catalog cost, which previously billed them at
-  zero.
+  xAI chat completions — are folded back in when the usage is recorded, so their
+  thinking tokens reach the session total and the catalog cost, which previously
+  billed them at zero. The provider's own token total decides it, so Grok 4.5 on
+  xAI's Responses API, whose output already includes reasoning, is not counted
+  twice.
 
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned

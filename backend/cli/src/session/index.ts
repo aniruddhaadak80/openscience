@@ -740,16 +740,6 @@ export namespace Session {
     return count
   }
 
-  /** Routes whose SDK reports `outputTokens` without the reasoning it billed,
-   *  so `TokenUsage`'s "output already includes reasoning" contract does not
-   *  hold for them until it is restored. `@ai-sdk/google` and
-   *  `google-vertex` 2.0.52 map `outputTokens` to Gemini's
-   *  `candidatesTokenCount` and report thinking separately as
-   *  `thoughtsTokenCount`; `@ai-sdk/xai` 2.0.51 adds reasoning on top of
-   *  `completion_tokens`. OpenAI, DeepSeek, OpenRouter and the other
-   *  OpenAI-compatible routes already report an inclusive `outputTokens`. */
-  const REASONING_OUTSIDE_OUTPUT = new Set(["@ai-sdk/google", "@ai-sdk/google-vertex", "@ai-sdk/xai"])
-
   export const getUsage = fn(
     z.object({
       model: z.custom<Provider.Model>(),
@@ -804,12 +794,21 @@ export namespace Session {
       const adjustedCacheWriteTokens = implicitWrite ? uncachedInputTokens : cacheWriteInputTokens
       const outputTokens = safe(input.usage.outputTokens ?? 0)
       const reasoningTokens = safe(input.usage?.reasoningTokens ?? 0)
+      // TokenUsage treats reasoning as a subset of output. Gemini
+      // (candidatesTokenCount beside thoughtsTokenCount) and xAI chat
+      // (completion_tokens beside reasoning_tokens) bill it outside
+      // `outputTokens`, while OpenAI and xAI Responses count it inside, on the
+      // same npm package. Only the provider's own total tells them apart; SDKs
+      // that compute a total sum input and output, which never passes. xAI can
+      // report cached tokens beside a smaller `inputTokens`, and its total
+      // covers both.
+      const reportedInput = safe(input.usage.inputTokens ?? 0)
+      const prompt = cacheReadInputTokens > reportedInput ? reportedInput + cacheReadInputTokens : reportedInput
+      const separate =
+        reasoningTokens > 0 && safe(input.usage.totalTokens ?? 0) >= prompt + outputTokens + reasoningTokens
       const tokens = {
         input: safe(adjustedInputTokens),
-        // TokenUsage treats reasoning as a subset of output, so a route that
-        // bills it separately is folded in here; leaving it out dropped Gemini
-        // thinking tokens from every total and under-billed the catalog cost.
-        output: REASONING_OUTSIDE_OUTPUT.has(input.model.api?.npm) ? outputTokens + reasoningTokens : outputTokens,
+        output: separate ? outputTokens + reasoningTokens : outputTokens,
         reasoning: reasoningTokens,
         cache: {
           write: safe(adjustedCacheWriteTokens),

@@ -62,8 +62,7 @@ export namespace Cost {
       if (message.info.role !== "assistant") continue
       cost += message.info.cost ?? 0
       // A reasoning model's reasoning tokens are a subset of its output, not
-      // an extra quantity, so adding `reasoning` on top of `output` inflated
-      // the figure and let a soft ceiling pass unnoticed.
+      // an extra quantity; `reasoning` is not added on top of `output`.
       tokens += TokenUsage.uncached(message.info.tokens)
     }
     return { cost, tokens }
