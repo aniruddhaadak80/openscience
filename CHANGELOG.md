@@ -316,10 +316,12 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
-- **`openscience.json` now wins over `openscience.jsonc` in your global
-  config.** The two were merged the other way round there, so a leftover
-  commented-out file could shadow the one the app writes. Project configs
-  already preferred the plain file.
+- **A saved setting sticks when both `openscience.json` and
+  `openscience.jsonc` exist.** `openscience.json` now wins over
+  `openscience.jsonc` in your global config, as it already did in a project,
+  and the app saves into `openscience.json` whenever both are there. Before,
+  a project save went to the `.jsonc` file and `openscience.json` hid it on
+  the next load. With only one of the two files, saves still go to that file.
 
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
