@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test"
+﻿import { expect, test } from "bun:test"
 import { Instance } from "../../src/project/instance"
 import { ExecutionHistory } from "../../src/science/execution/history"
 import { ProvenanceEnvelope } from "../../src/science/provenance/envelope"
@@ -64,7 +64,7 @@ test("execution history projects ordered, restart-aware runs and their saved res
       const artifact = await Provenance.recordOwned(scope, {
         id: "artifact-version:result",
         kind: "artifact",
-        label: "Result · version 1",
+        label: "Result ┬╖ version 1",
         artifactType: "dataset",
         contentHash: "a".repeat(64),
         size: 12,
@@ -301,6 +301,56 @@ test("a run recorded without a sequence does not take a kernel execution's numbe
       expect(new Set(numbers).size).toBe(numbers.length)
       expect(history.find((record) => record.id === "run_kernel_1")?.sequence).toBe(1)
       expect(history.find((record) => record.id === "run_kernel_2")?.sequence).toBe(2)
+    },
+  })
+}, 30_000)
+
+test("a queued kernel execution keeps its number from a finished shell run", async () => {
+  await using tmp = await tmpdir({ git: true })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const scope = { projectID: Instance.project.id, directory: Instance.directory }
+      // A kernel run that has not finished has no provenance node yet, so it is
+      // only visible in the journal. Reserving ordinals from the graph alone
+      // would hand its number to the next run that has no ordinal of its own.
+      const queued = await ExecutionHistory.submit({
+        sessionID: "ses_queued",
+        language: "python",
+        environmentName: "analysis",
+        kernelName: "python3",
+        code: "print(1)",
+      })
+
+      // Exactly what tool/bash.ts records: a local_compute envelope with no
+      // executionSequence, which is why it takes the synthetic branch.
+      await Provenance.recordOwned(scope, {
+        id: "run_shell_queued",
+        kind: "run",
+        label: "ls",
+        tool: "bash",
+        sessionID: "ses_queued",
+        inputs: { command: "ls" },
+        status: "ok",
+        provenance: ProvenanceEnvelope.create({
+          kind: "local_compute",
+          projectID: Instance.project.id,
+          sessionID: "ses_queued",
+          runID: "run_shell_queued",
+          code: "ls",
+          host: { platform: "linux", arch: "x64" },
+          status: "succeeded",
+          outputs: [],
+          createdAt: 2_000,
+          startedAt: 2_000,
+          completedAt: 2_000,
+        }),
+        meta: { exit: 0 },
+      } as Parameters<typeof Provenance.record>[0])
+
+      const history = await ExecutionHistory.list(scope, "ses_queued")
+      expect(history.find((record) => record.id === queued.id)?.sequence).toBe(1)
+      expect(history.find((record) => record.id === "run_shell_queued")?.sequence).toBe(2)
     },
   })
 }, 30_000)

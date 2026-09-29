@@ -447,18 +447,23 @@ export namespace ExecutionHistory {
       })
 
     const count = new Map<string, number>()
-    // Reserve every journal-assigned ordinal first. A run recorded without one
-    // — a local bash run, say — must not claim a number the durable journal
-    // already gave a kernel cell: the agent reads `sequence` as "execution N of
-    // this session", so a duplicate makes two records contradict each other.
+    // Reserve every ordinal that has already been handed out before assigning
+    // one of our own. The journal is the authority: a kernel run that is still
+    // queued or running exists only there, and a run recorded without an
+    // ordinal — a local bash run, say — must not claim a number the journal
+    // already gave it. The agent reads `sequence` as "execution N of this
+    // session", so a duplicate makes two records contradict each other.
     const reserved = new Map<string, Set<number>>()
+    const reserve = (session: string, sequence: number) => {
+      const taken = reserved.get(session) ?? new Set<number>()
+      taken.add(sequence)
+      reserved.set(session, taken)
+    }
+    for (const record of durable) reserve(record.session_id, record.sequence)
     for (const run of runs) {
       const stored = Sequence.safeParse(run.meta?.executionSequence)
       if (!stored.success) continue
-      const session = run.sessionID ?? value(run.provenance?.identity.session_id) ?? "unknown"
-      const taken = reserved.get(session) ?? new Set<number>()
-      taken.add(stored.data)
-      reserved.set(session, taken)
+      reserve(run.sessionID ?? value(run.provenance?.identity.session_id) ?? "unknown", stored.data)
     }
     const completed = runs.map((run) => {
       const envelope = run.provenance!
