@@ -307,6 +307,11 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **OpenScience installs and runs on Linux kernels from 3.10.** The installer and
+  the launcher refused any kernel below 5.1, a floor copied from an older Bun
+  release, so CentOS and RHEL 8 (kernel 4.18) could not install or start it.
+  Both checks now require 3.10, the minimum the bundled Bun runtime supports.
+
 - **Autoresearch launches its own runs on this computer.** A study keeps its
   code under Project files, but local compute only ran from Session scratch, so
   every `study start` failed with "exists only in Project files" and the agent
