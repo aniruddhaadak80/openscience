@@ -322,6 +322,54 @@ public 50 the old detector named an example's `samples.csv` and the input
   and the app saves into `openscience.json` whenever both are there. Before,
   a project save went to the `.jsonc` file and `openscience.json` hid it on
   the next load. With only one of the two files, saves still go to that file.
+- **A local MCP server without a command says so.** An entry whose `command`
+  was empty, or began with an empty string, was launched with no program to run
+  and failed as "Connection closed". It is no longer launched: the connector
+  fails with a message naming the server and its empty `command`, and the rest
+  of the config loads as before.
+- **Picking a folder by its `file://` link works on Windows.** A link to a
+  drive path was turned into a doubled drive letter and a link to a network
+  share lost its server, so the folder could not be selected. A stray `%` in a
+  link no longer fails the whole request on any platform.
+- **A malformed patch is no longer reported as applied.** An
+  `*** Update File:` section with no `@@` header parsed to zero chunks, so
+  `deriveNewContentsFromChunks` wrote the file's own bytes back and the tool
+  reported a success with an empty diff. A hunk line that lost its leading space
+  or sign was dropped from both sides of the hunk, and the remaining context was
+  then matched with progressively looser passes, so an edit could land somewhere
+  other than where it was asked for. Both shapes are now rejected as malformed
+  instead of applied. A line that is merely indented is still read as a context
+  line, which is what the format means, and a bare empty line is still blank
+  context, so a blank line before `*** End Patch` or the next file keeps
+  applying. An update section with neither a hunk nor a `*** Move to:` is
+  rejected too.
+- **The session spend figure no longer counts reasoning tokens twice, and no
+  longer drops them for Gemini.** A reasoning model's reasoning tokens are a
+  subset of its output rather than an extra quantity, so adding them on top of
+  the output figure inflated the session total on every OpenAI-compatible route.
+  That is now counted once. Routes that bill reasoning outside the output figure
+  — Gemini, whose SDK reports thinking as a separate `thoughtsTokenCount`, and
+  xAI chat completions — are folded back in when the usage is recorded, so their
+  thinking tokens reach the session total and the catalog cost, which previously
+  billed them at zero. The provider's own token total decides it, so Grok 4.5 on
+  xAI's Responses API, whose output already includes reasoning, is not counted
+  twice.
+- **Searching the terminal highlights the text it actually matched.** The search
+  folded each line to lower case before looking for the query, and the offset it
+  found was an index into that folded line. Folding can change a line's length —
+  U+0130 lowercases to two code units — so a match in a line containing one was
+  reported at the wrong column and highlighted the wrong text. Offsets are now
+  translated back to the original line, and a match ending in an astral
+  character is no longer reported one code unit short, which cut the highlight
+  through the middle of an emoji.
+- **The desktop app starts when your profile path has non-ASCII characters.** The
+  SDK sent the project directory in a request header as is, and a path such as
+  `C:\Users\Пользователь\...` is not a valid header value, so the app failed at
+  startup. The directory is now percent-encoded, as the newer client already did.
+- **Entering a session no longer rewinds a running conversation's text.** While
+  the agent was streaming, a snapshot taken as you arrived could overwrite what
+  had already arrived, and a message deleted mid-stream could reappear. The check
+  meant to prevent that was reading its change list under the wrong key.
 
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
@@ -408,6 +456,22 @@ public 50 the old detector named an example's `samples.csv` and the input
   projects yet", so opening a folder whose record already existed minted a
   second identity for it and left its history stranded under the old one. The
   failure now surfaces instead of quietly forking the project.
+- **A shortened long option no longer looks safer than the flag it stands
+  for.** `sed --in-p` edits in place, `sort --outp` writes its output file and
+  `tar --to-c` runs a command for every extracted file — all accepted by the GNU
+  tools — but the risk classifier matched exact spellings only, so these were
+  treated as read-only and skipped the confirmation a destructive command always
+  gets. The option name is now compared ahead of any `=value`, and a prefix
+  counts as reaching the flag it abbreviates. That widening is confined to the
+  checks where a hit makes a command risky, so it cannot promote `unzip --l` into
+  a listing or affect `tsc --noEmit`, which is not `--noemit`.
+- **A fuzzy edit no longer deletes the indentation it matched.** When a model
+  re-quoted a line with slightly different internal spacing, the edit matched the
+  whole line, and the replacement had been written for the text that was quoted
+  rather than the padding around it — so an indented statement was replaced at
+  column 0 and the file stopped parsing. The edit now applies where the model
+  looked, at the indentation the file already had; a deliberate outdent is
+  unaffected.
 - **A slash command keeps the dollar signs you typed.** `$ARGUMENTS` was
   substituted with a string replacement, so `$$` collapsed to `$` (display math
   became inline math), `$&` came back as the placeholder itself and `$'`
