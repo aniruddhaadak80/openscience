@@ -328,6 +328,10 @@ public 50 the old detector named an example's `samples.csv` and the input
   a fresh user-visible authorization instead. Credentials stored before this
   release are bound on their next successful refresh. Reported by Saku0512
   (CWE-522).
+- **A price tier now begins where it says it does.** Its start came from the
+  tier above ending, so a gap in the catalog charged the higher rate for
+  prompts too small to have reached it. A base tier written as `min: 1` is also
+  recognised now, instead of dropping the model from pricing altogether.
 - **Listing files now returns them in a stable order.** Files written at the
   same moment — by a checkout, a build, or a script — share a timestamp, so
   their order came from the filesystem and two identical searches could list
