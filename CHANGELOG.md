@@ -401,6 +401,12 @@ public 50 the old detector named an example's `samples.csv` and the input
   projects yet", so opening a folder whose record already existed minted a
   second identity for it and left its history stranded under the old one. The
   failure now surfaces instead of quietly forking the project.
+- **A code search no longer reports a real answer as "nothing found".** The
+  reader only understood server-sent frames, so a plain JSON reply — the first
+  type the request asks for — was reported as an empty search, a frame without a
+  space after the colon was missed, and a rejected call came back as an error
+  object with no result and was reported as an empty search too. A rejected
+  search now says what was rejected.
 - **A slash command keeps the dollar signs you typed.** `$ARGUMENTS` was
   substituted with a string replacement, so `$$` collapsed to `$` (display math
   became inline math), `$&` came back as the placeholder itself and `$'`
