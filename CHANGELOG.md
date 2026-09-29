@@ -316,6 +316,15 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **The desktop app starts when your profile path has non-ASCII characters.** The
+  SDK sent the project directory in a request header as is, and a path such as
+  `C:\Users\Пользователь\...` is not a valid header value, so the app failed at
+  startup. The directory is now percent-encoded, as the newer client already did.
+- **Entering a session no longer rewinds a running conversation's text.** While
+  the agent was streaming, a snapshot taken as you arrived could overwrite what
+  had already arrived, and a message deleted mid-stream could reappear. The check
+  meant to prevent that was reading its change list under the wrong key.
+
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
   "Tool get_code_context_exa not found" as if it were the answer. The tool now
@@ -410,6 +419,13 @@ public 50 the old detector named an example's `samples.csv` and the input
   counts as reaching the flag it abbreviates. That widening is confined to the
   checks where a hit makes a command risky, so it cannot promote `unzip --l` into
   a listing or affect `tsc --noEmit`, which is not `--noemit`.
+- **A fuzzy edit no longer deletes the indentation it matched.** When a model
+  re-quoted a line with slightly different internal spacing, the edit matched the
+  whole line, and the replacement had been written for the text that was quoted
+  rather than the padding around it — so an indented statement was replaced at
+  column 0 and the file stopped parsing. The edit now applies where the model
+  looked, at the indentation the file already had; a deliberate outdent is
+  unaffected.
 - **A slash command keeps the dollar signs you typed.** `$ARGUMENTS` was
   substituted with a string replacement, so `$$` collapsed to `$` (display math
   became inline math), `$&` came back as the placeholder itself and `$'`
