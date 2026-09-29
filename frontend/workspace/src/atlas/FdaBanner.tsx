@@ -59,13 +59,14 @@ function FdaChip(): JSX.Element {
   const sdk = useGlobalSDK()
   // Same reason as `dismiss`: reading the global is what throws when storage is
   // blocked, and `typeof` invokes the same getter, so it cannot guard the read.
-  const [dismissed, setDismissed] = createSignal(() => {
+  const stored = (() => {
     try {
       return globalThis.localStorage.getItem(DISMISS_KEY) === "1"
     } catch {
       return false
     }
   })()
+  const [dismissed, setDismissed] = createSignal(stored)
   const [probe, { refetch }] = createResource(() => sdk.url, probeFda)
   const dialog = useDialog()
 
