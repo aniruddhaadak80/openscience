@@ -321,6 +321,83 @@ public 50 the old detector named an example's `samples.csv` and the input
   the turn either reported an assumption it had not recorded or opened a prompt
   card with nothing on it and waited. An empty list is now refused with a note
   to retry.
+- **A web fetch that selected a path of only dots no longer returns the whole
+  page.** A selection like `.` or `..` names no field, so the fetch handed back
+  the entire document and still reported "selected 1 path", with the "not found"
+  note that would have pointed at the mistake suppressed. Such a selection now
+  reports the path as not found, like any other bad one.
+- **Truncated output no longer reports one line more than it removed.** Any
+  tool output that ends in a newline was split into an extra empty line, which
+  the preview kept and the count included, so a 100-line file truncated to 10
+  announced 91 lines truncated. The count now matches what was actually
+  dropped. The full output saved to disk is unchanged.
+- **Importing a broken session file now says so and exits non-zero.** A file
+  that was not valid JSON was reported as "File not found", sending you looking
+  for a path you had just typed, and the command still exited successfully. It
+  now distinguishes a missing file from an unreadable or wrongly shaped one.
+- **A requirements file with a comment or a blank line can now be installed.**
+  Both were counted as package pins, so the check confirming every pinned wheel
+  was downloaded rejected the file and the task environment was never built.
+- **A broad skill search now says how many matches it left out.** Searching
+  returned the best eight with nothing to indicate there were more, which read
+  as the whole set. It now reports the total and suggests narrowing the query.
+- **Shell scripts and git hooks keep LF line endings on Windows checkouts.**
+  With Git for Windows' default `core.autocrlf=true` they were checked out with
+  CRLF and failed under bash with `$'\r': command not found`.
+- **A saved setting sticks when both `openscience.json` and
+  `openscience.jsonc` exist.** `openscience.json` now wins over
+  `openscience.jsonc` in your global config, as it already did in a project,
+  and the app saves into `openscience.json` whenever both are there. Before,
+  a project save went to the `.jsonc` file and `openscience.json` hid it on
+  the next load. With only one of the two files, saves still go to that file.
+- **A local MCP server without a command says so.** An entry whose `command`
+  was empty, or began with an empty string, was launched with no program to run
+  and failed as "Connection closed". It is no longer launched: the connector
+  fails with a message naming the server and its empty `command`, and the rest
+  of the config loads as before.
+- **Picking a folder by its `file://` link works on Windows.** A link to a
+  drive path was turned into a doubled drive letter and a link to a network
+  share lost its server, so the folder could not be selected. A stray `%` in a
+  link no longer fails the whole request on any platform.
+- **A malformed patch is no longer reported as applied.** An
+  `*** Update File:` section with no `@@` header parsed to zero chunks, so
+  `deriveNewContentsFromChunks` wrote the file's own bytes back and the tool
+  reported a success with an empty diff. A hunk line that lost its leading space
+  or sign was dropped from both sides of the hunk, and the remaining context was
+  then matched with progressively looser passes, so an edit could land somewhere
+  other than where it was asked for. Both shapes are now rejected as malformed
+  instead of applied. A line that is merely indented is still read as a context
+  line, which is what the format means, and a bare empty line is still blank
+  context, so a blank line before `*** End Patch` or the next file keeps
+  applying. An update section with neither a hunk nor a `*** Move to:` is
+  rejected too.
+- **The session spend figure no longer counts reasoning tokens twice, and no
+  longer drops them for Gemini.** A reasoning model's reasoning tokens are a
+  subset of its output rather than an extra quantity, so adding them on top of
+  the output figure inflated the session total on every OpenAI-compatible route.
+  That is now counted once. Routes that bill reasoning outside the output figure
+  — Gemini, whose SDK reports thinking as a separate `thoughtsTokenCount`, and
+  xAI chat completions — are folded back in when the usage is recorded, so their
+  thinking tokens reach the session total and the catalog cost, which previously
+  billed them at zero. The provider's own token total decides it, so Grok 4.5 on
+  xAI's Responses API, whose output already includes reasoning, is not counted
+  twice.
+- **Searching the terminal highlights the text it actually matched.** The search
+  folded each line to lower case before looking for the query, and the offset it
+  found was an index into that folded line. Folding can change a line's length —
+  U+0130 lowercases to two code units — so a match in a line containing one was
+  reported at the wrong column and highlighted the wrong text. Offsets are now
+  translated back to the original line, and a match ending in an astral
+  character is no longer reported one code unit short, which cut the highlight
+  through the middle of an emoji.
+- **The desktop app starts when your profile path has non-ASCII characters.** The
+  SDK sent the project directory in a request header as is, and a path such as
+  `C:\Users\Пользователь\...` is not a valid header value, so the app failed at
+  startup. The directory is now percent-encoded, as the newer client already did.
+- **Entering a session no longer rewinds a running conversation's text.** While
+  the agent was streaming, a snapshot taken as you arrived could overwrite what
+  had already arrived, and a message deleted mid-stream could reappear. The check
+  meant to prevent that was reading its change list under the wrong key.
 
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
@@ -407,6 +484,40 @@ public 50 the old detector named an example's `samples.csv` and the input
   projects yet", so opening a folder whose record already existed minted a
   second identity for it and left its history stranded under the old one. The
   failure now surfaces instead of quietly forking the project.
+- **One damaged file no longer freezes storage migrations forever.** The
+  migration marker only advances past a migration that completes, so a single
+  unreadable record — what an interrupted write leaves behind — failed the
+  migration and stopped every migration added in every later release from running
+  again, with nothing but one line in a log to show for it. A damaged record now
+  costs only that record, and the rest of the chain carries on.
+- **A code search no longer reports a real answer as "nothing found".** The
+  reader only understood server-sent frames, so a plain JSON reply — the first
+  type the request asks for — was reported as an empty search, a frame without a
+  space after the colon was missed, and a rejected call came back as an error
+  object with no result and was reported as an empty search too. A rejected
+  search now says what was rejected.
+- **Two runs can no longer claim the same execution number.** A run recorded
+  without a journal ordinal — a local shell run — took the next number in the
+  session, which is the number the durable journal had already given the
+  following kernel execution. The history then showed two records as "execution
+  2", contradicting the journal about which result was the second one, and
+  anything keying on the session and number saw a collision.
+- **A shortened long option no longer looks safer than the flag it stands
+  for.** `sed --in-p` edits in place, `sort --outp` writes its output file and
+  `tar --to-c` runs a command for every extracted file — all accepted by the GNU
+  tools — but the risk classifier matched exact spellings only, so these were
+  treated as read-only and skipped the confirmation a destructive command always
+  gets. The option name is now compared ahead of any `=value`, and a prefix
+  counts as reaching the flag it abbreviates. That widening is confined to the
+  checks where a hit makes a command risky, so it cannot promote `unzip --l` into
+  a listing or affect `tsc --noEmit`, which is not `--noemit`.
+- **A fuzzy edit no longer deletes the indentation it matched.** When a model
+  re-quoted a line with slightly different internal spacing, the edit matched the
+  whole line, and the replacement had been written for the text that was quoted
+  rather than the padding around it — so an indented statement was replaced at
+  column 0 and the file stopped parsing. The edit now applies where the model
+  looked, at the indentation the file already had; a deliberate outdent is
+  unaffected.
 - **A slash command keeps the dollar signs you typed.** `$ARGUMENTS` was
   substituted with a string replacement, so `$$` collapsed to `$` (display math
   became inline math), `$&` came back as the placeholder itself and `$'`
