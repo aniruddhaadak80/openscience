@@ -424,6 +424,9 @@ public 50 the old detector named an example's `samples.csv` and the input
   had already arrived, and a message deleted mid-stream could reappear. The check
   meant to prevent that was reading its change list under the wrong key.
 
+- **A duration longer than a day now names its days.** Anything past 24 hours
+  was shown with zero days and an unbounded hour count, so a two-day job read
+  as "0d 48h".
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
   "Tool get_code_context_exa not found" as if it were the answer. The tool now
