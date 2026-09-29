@@ -369,6 +369,33 @@ describe("tool.apply_patch freeform", () => {
     })
   })
 
+  test("renames a file when the update carries no hunk", async () => {
+    // The tool description allows an update "optionally with a rename", so a
+    // `Move to` with no `@@` below it is valid input and has to keep working:
+    // there is no change line here for the malformed-shape check to trip on.
+    await using fixture = await tmpdir()
+    const { ctx } = makeCtx()
+
+    await Instance.provide({
+      directory: fixture.path,
+      fn: async () => {
+        try {
+          const original = path.join(fixture.path, "a.txt")
+          await fs.writeFile(original, "keep me\n", "utf-8")
+
+          const patchText = "*** Begin Patch\n*** Update File: a.txt\n*** Move to: b.txt\n*** End Patch"
+          await execute({ patchText }, ctx)
+
+          const moved = path.join(fixture.path, "b.txt")
+          await expect(fs.readFile(original, "utf-8")).rejects.toThrow()
+          expect(await fs.readFile(moved, "utf-8")).toBe("keep me\n")
+        } finally {
+          await Instance.dispose()
+        }
+      },
+    })
+  })
+
   test("refuses to move over an existing destination", async () => {
     await using fixture = await tmpdir()
     const { ctx } = makeCtx()
