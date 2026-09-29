@@ -227,13 +227,16 @@ if (!Flag.OPENSCIENCE_DISABLE_MODELS_FETCH) {
   // a live fetch; the hourly interval keeps a long-running server current.
   // `refresh` writes the cache file, which rejects on a read-only or full cache
   // directory. Nothing observed either promise, so the rejection was unhandled
-  // and took the process down on the default configuration.
+  // and took the process down on the default configuration. The namespace's own
+  // logger is not in scope out here, so build one for these two call sites.
+  const reportRefreshFailure = (error: unknown) =>
+    Log.create({ service: "models.dev" }).error("Failed to refresh the models.dev catalog", { error })
   ModelsDev.fresh()
     .then((fresh) => (fresh ? undefined : ModelsDev.refresh()))
-    .catch((error) => log.error("Failed to refresh the models.dev catalog", { error }))
+    .catch(reportRefreshFailure)
   setInterval(
     async () => {
-      await ModelsDev.refresh().catch((error) => log.error("Failed to refresh the models.dev catalog", { error }))
+      await ModelsDev.refresh().catch(reportRefreshFailure)
     },
     60 * 1000 * 60,
   ).unref()
