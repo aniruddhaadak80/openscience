@@ -401,6 +401,12 @@ public 50 the old detector named an example's `samples.csv` and the input
   projects yet", so opening a folder whose record already existed minted a
   second identity for it and left its history stranded under the old one. The
   failure now surfaces instead of quietly forking the project.
+- **One damaged file no longer freezes storage migrations forever.** The
+  migration marker only advances past a migration that completes, so a single
+  unreadable record — what an interrupted write leaves behind — failed the
+  migration and stopped every migration added in every later release from running
+  again, with nothing but one line in a log to show for it. A damaged record now
+  costs only that record, and the rest of the chain carries on.
 - **A slash command keeps the dollar signs you typed.** `$ARGUMENTS` was
   substituted with a string replacement, so `$$` collapsed to `$` (display math
   became inline math), `$&` came back as the placeholder itself and `$'`
