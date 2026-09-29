@@ -315,6 +315,7 @@ public 50 the old detector named an example's `samples.csv` and the input
   worker that exists.
 
 ### Fixed
+
 - **Entering a session no longer rewinds a running conversation's text.** While
   the agent was streaming, a snapshot taken as you arrived could overwrite what
   had already arrived, and a message deleted mid-stream could reappear. The check
