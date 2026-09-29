@@ -152,6 +152,14 @@ export namespace Patch {
           } else if (changeLine.startsWith("+")) {
             // Add line - only in new
             newLines.push(changeLine.substring(1))
+          } else if (changeLine === "") {
+            // A blank line is a context line whose prefix was lost. It must
+            // stay legal, because a hunk is allowed to end before the next
+            // header with one.
+          } else {
+            // Dropping an unprefixed line silently removes the model's only
+            // disambiguator, and the hunk then matches somewhere else.
+            throw new Error(`Invalid patch line, expected a leading ' ', '-' or '+': ${changeLine}`)
           }
 
           i++
@@ -390,13 +398,8 @@ export namespace Patch {
 
       // Handle pure addition (no old lines)
       if (chunk.old_lines.length === 0) {
-        // The @@ header already resolved where this belongs, so use it.
-        // Appending instead drops the line at end of file, outside the block
-        // the model named, and the file keeps working while doing something
-        // else. An unanchored hunk still falls back to the end.
-        const insertionIdx = chunk.change_context
-          ? lineIndex
-          : originalLines.length > 0 && originalLines[originalLines.length - 1] === ""
+        const insertionIdx =
+          originalLines.length > 0 && originalLines[originalLines.length - 1] === ""
             ? originalLines.length - 1
             : originalLines.length
         replacements.push([insertionIdx, 0, chunk.new_lines])
