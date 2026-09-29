@@ -225,10 +225,15 @@ export namespace ModelsDev {
 if (!Flag.OPENSCIENCE_DISABLE_MODELS_FETCH) {
   // A cache younger than a day is served as-is at boot so startup never races
   // a live fetch; the hourly interval keeps a long-running server current.
-  ModelsDev.fresh().then((fresh) => (fresh ? undefined : ModelsDev.refresh()))
+  // `refresh` writes the cache file, which rejects on a read-only or full cache
+  // directory. Nothing observed either promise, so the rejection was unhandled
+  // and took the process down on the default configuration.
+  ModelsDev.fresh()
+    .then((fresh) => (fresh ? undefined : ModelsDev.refresh()))
+    .catch((error) => log.error("Failed to refresh the models.dev catalog", { error }))
   setInterval(
     async () => {
-      await ModelsDev.refresh()
+      await ModelsDev.refresh().catch((error) => log.error("Failed to refresh the models.dev catalog", { error }))
     },
     60 * 1000 * 60,
   ).unref()
