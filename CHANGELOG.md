@@ -316,6 +316,15 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **A malformed patch is no longer reported as applied.** An
+  `*** Update File:` section with no `@@` header parsed to zero chunks, so
+  `deriveNewContentsFromChunks` wrote the file's own bytes back and the tool
+  reported a success with an empty diff. A hunk line that lost its leading space
+  or sign was dropped from both sides of the hunk, and the remaining context was
+  then matched with progressively looser passes, so an edit could land somewhere
+  other than where it was asked for. Both shapes are now rejected as malformed
+  instead of applied. A line that is merely indented is still read as a context
+  line, which is what the format means.
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
   "Tool get_code_context_exa not found" as if it were the answer. The tool now

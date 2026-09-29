@@ -649,6 +649,42 @@ describe("tool.apply_patch freeform", () => {
     })
   })
 
+  test("rejects an update section that has no hunk header", async () => {
+    await using fixture = await tmpdir()
+    const { ctx } = makeCtx()
+
+    await Instance.provide({
+      directory: fixture.path,
+      fn: async () => {
+        const target = path.join(fixture.path, "a.py")
+        await fs.writeFile(target, "    old\n", "utf-8")
+
+        const patchText = "*** Begin Patch\n*** Update File: a.py\n-    old\n+    new\n*** End Patch"
+
+        await expect(execute({ patchText }, ctx)).rejects.toThrow()
+        expect(await fs.readFile(target, "utf-8")).toBe("    old\n")
+      },
+    })
+  })
+
+  test("rejects a hunk line that lost its prefix", async () => {
+    await using fixture = await tmpdir()
+    const { ctx } = makeCtx()
+
+    await Instance.provide({
+      directory: fixture.path,
+      fn: async () => {
+        const target = path.join(fixture.path, "notes.txt")
+        await fs.writeFile(target, "one\ntwo\nthree\n", "utf-8")
+
+        const patchText = "*** Begin Patch\n*** Update File: notes.txt\n@@\n-one\n+ONE\ntwo\n+extra\n*** End Patch"
+
+        await expect(execute({ patchText }, ctx)).rejects.toThrow()
+        expect(await fs.readFile(target, "utf-8")).toBe("one\ntwo\nthree\n")
+      },
+    })
+  })
+
   test("verification failure leaves no side effects", async () => {
     await using fixture = await tmpdir()
     const { ctx } = makeCtx()
