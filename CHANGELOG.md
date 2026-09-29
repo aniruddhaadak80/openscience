@@ -316,9 +316,11 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
-- **A local MCP server entry without a command is now rejected.** The command
-  list could be empty and the connection was then launched with no executable
-  to run. It is now reported at the config entry, with an example.
+- **A local MCP server without a command says so.** An entry whose `command`
+  was empty, or began with an empty string, was launched with no program to run
+  and failed as "Connection closed". It is no longer launched: the connector
+  fails with a message naming the server and its empty `command`, and the rest
+  of the config loads as before.
 
 - **Code search works again, and a failed search reads as an error.** Exa
   retired the code-context tool `codesearch` called, so every search returned
