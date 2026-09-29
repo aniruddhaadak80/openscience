@@ -1,4 +1,4 @@
-﻿import { expect, test } from "bun:test"
+import { expect, test } from "bun:test"
 import { Instance } from "../../src/project/instance"
 import { ExecutionHistory } from "../../src/science/execution/history"
 import { ProvenanceEnvelope } from "../../src/science/provenance/envelope"
@@ -64,7 +64,7 @@ test("execution history projects ordered, restart-aware runs and their saved res
       const artifact = await Provenance.recordOwned(scope, {
         id: "artifact-version:result",
         kind: "artifact",
-        label: "Result ┬╖ version 1",
+        label: "Result · version 1",
         artifactType: "dataset",
         contentHash: "a".repeat(64),
         size: 12,
