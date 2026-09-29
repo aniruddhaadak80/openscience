@@ -62115,6 +62115,7 @@
           },
           "command": {
             "description": "Command and arguments to run the MCP server",
+            "minItems": 1,
             "type": "array",
             "items": {
               "type": "string"
