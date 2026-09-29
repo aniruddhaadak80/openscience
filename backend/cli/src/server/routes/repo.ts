@@ -289,7 +289,11 @@ async function push(directory: string, branch: unknown) {
     .then((x) => x.out)
     .catch(() => "")
   // An explicit refspec after `--` leaves git nothing to read as an option.
-  const args = upstream ? ["push"] : ["push", "-u", "origin", "--", `refs/heads/${current}:refs/heads/${current}`]
+  // `upstream` only decides whether to set one. The refspec is needed either
+  // way: without it, a push naming another branch pushed the checked-out branch
+  // to its own upstream and still reported success.
+  const refspec = `refs/heads/${current}:refs/heads/${current}`
+  const args = upstream ? ["push", "origin", refspec] : ["push", "-u", "origin", "--", refspec]
   const result = await gitPublish(args, directory)
   return { pushed: true, output: result.out || result.err }
 }
