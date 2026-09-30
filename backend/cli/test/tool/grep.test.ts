@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import fs from "node:fs/promises"
 import path from "path"
-import { GrepTool, searchFailure } from "../../src/tool/grep"
+import { GrepTool, byModTime, searchFailure } from "../../src/tool/grep"
 import { Instance } from "../../src/project/instance"
 import { tmpdir } from "../fixture/fixture"
 
@@ -255,5 +255,101 @@ describe("tool.grep failure message", () => {
 
   test("still says something when --no-messages left stderr empty", () => {
     expect(searchFailure(undefined, "")).toBe("Search failed: Some paths could not be searched.")
+  })
+
+  describe("byModTime", () => {
+    const match = (path: string, modTime: number) => ({ path, modTime })
+
+    test("orders newest first", () => {
+      const rows = [match("a", 100), match("b", 300), match("c", 200)]
+      expect(
+        rows
+          .slice()
+          .sort(byModTime)
+          .map((r) => r.path),
+      ).toEqual(["b", "c", "a"])
+    })
+
+    test("breaks ties by path, so the same files come back every time", () => {
+      // One checkout gives every file the same mtime. Without a tiebreak the
+      // order came from ripgrep's traversal, and since the list is cut to
+      // MAX_MATCHES the *membership* of the result changed between two
+      // identical searches.
+      const shared = 1_700_000_000_000
+      const rows = ["delta", "alpha", "charlie", "bravo", "echo"].map((p) => match(p, shared))
+      const first = rows
+        .slice()
+        .sort(byModTime)
+        .map((r) => r.path)
+      const second = rows
+        .slice()
+        .reverse()
+        .sort(byModTime)
+        .map((r) => r.path)
+      expect(first).toEqual(["alpha", "bravo", "charlie", "delta", "echo"])
+      expect(second).toEqual(first)
+    })
+
+    test("a tie is decided the same way whatever order the scan produced", () => {
+      const shared = 1_700_000_000_000
+      type Row = { path: string; modTime: number }
+      const cut = (rows: Row[]) =>
+        rows
+          .sort(byModTime)
+          .slice(0, 3)
+          .map((r) => r.path)
+      const a: Row[] = ["delta", "alpha", "charlie", "bravo"].map((p) => match(p, shared))
+      expect(cut(a.slice())).toEqual(cut(a.slice().reverse()))
+    })
+
+    test("a search over files that share an mtime returns the same files every time", async () => {
+      // Exceeds MAX_MATCHES (100) on purpose: the cut is what turns a shaky
+      // order into a different *set* of files, so a handful of files would
+      // not show it.
+      const count = 120
+      const names: string[] = []
+      await using tmp = await tmpdir({
+        init: async (dir) => {
+          for (let i = 0; i < count; i++) {
+            const name = `f${String(i).padStart(3, "0")}.txt`
+            names.push(name)
+            await Bun.write(path.join(dir, name), "needlehere")
+          }
+          // One shared mtime for every file, which is what a fresh checkout or
+          // an unpacked archive gives you.
+          const when = new Date(1_700_000_000_000)
+          for (const name of names) await fs.utimes(path.join(dir, name), when, when)
+        },
+      })
+
+      const run = async () => {
+        // Instance.provide does not return its callback's value, so capture it.
+        let output: string | undefined
+        await Instance.provide({
+          directory: tmp.path,
+          fn: async () => {
+            const grep = await GrepTool.init()
+            const result = await grep.execute({ pattern: "needlehere", path: tmp.path }, ctx)
+            output = result.output
+          },
+        })
+        if (output === undefined) throw new Error("grep returned no output")
+        return output
+      }
+
+      const first = await run()
+      const second = await run()
+      const listed = (text: string) => [...text.matchAll(/f\d{3}\.txt:/g)].map((m) => m[0])
+      // Same search over the same tree, so the same set of files. Compare the
+      // file names, not the rendered text: the output embeds absolute paths
+      // and the fixture's temp directory is not part of the behaviour.
+      expect(listed(second)).toEqual(listed(first))
+      // And the retained 100 are the alphabetically first 100 of the 120, not
+      // whichever 100 the traversal happened to reach.
+      const kept = new Set(listed(first))
+      expect(kept.has("f000.txt:")).toBe(true)
+      expect(kept.has("f099.txt:")).toBe(true)
+      expect(kept.has("f100.txt:")).toBe(false)
+    })
   })
 })

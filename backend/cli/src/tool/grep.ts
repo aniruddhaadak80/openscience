@@ -10,6 +10,12 @@ import { assertExternalDirectory, sessionToolDirectory } from "./external-direct
 
 const MAX_LINE_LENGTH = 2000
 const MAX_MATCHES = 100
+// ripgrep emits one line per match, so the reader can stop once it has seen
+// enough. Read a healthy overshoot instead of stopping at exactly MAX_MATCHES:
+// matches that are then dropped for an unreadable path still leave a full
+// window, so the cut below is decided by the deterministic sort rather than by
+// how far ripgrep happened to get.
+const MAX_LINES = MAX_MATCHES * 8
 
 /** `--no-messages` silences stderr for exactly the failures this branch exists
  *  to explain, so an empty detail still has to reach the generic text: `??` only
@@ -18,12 +24,20 @@ export function searchFailure(missing: string | undefined, detail: string) {
   return `Search failed: ${missing ?? (detail || "Some paths could not be searched.")}`
 }
 
+/** Newest first, ties by path. A checkout gives every file the same mtime, and
+ * without the tiebreak the sort kept ripgrep's traversal order, so two
+ * identical searches could return different *files* once the list is cut to
+ * MAX_MATCHES. Exported so the ordering can be tested without a search. */
+export function byModTime(a: { path: string; modTime: number }, b: { path: string; modTime: number }) {
+  return b.modTime - a.modTime || a.path.localeCompare(b.path)
+}
+
 async function output(proc: { stdout: ReadableStream<Uint8Array>; kill(): void }, abort: AbortSignal) {
   const reader = proc.stdout.getReader()
   const decoder = new TextDecoder()
   const state = { buffer: "", lines: [] as string[], stopped: false }
   try {
-    while (state.lines.length <= MAX_MATCHES) {
+    while (state.lines.length <= MAX_LINES) {
       abort.throwIfAborted()
       const chunk = await reader.read()
       if (chunk.done) break
@@ -33,7 +47,7 @@ async function output(proc: { stdout: ReadableStream<Uint8Array>; kill(): void }
       for (const line of lines) {
         if (!line) continue
         state.lines.push(line)
-        if (state.lines.length <= MAX_MATCHES) continue
+        if (state.lines.length <= MAX_LINES) continue
         state.stopped = true
         proc.kill()
         break
@@ -156,7 +170,7 @@ export const GrepTool = Tool.define("grep", {
       })
     }
 
-    matches.sort((a, b) => b.modTime - a.modTime)
+    matches.sort(byModTime)
 
     const truncated = collected.stopped || matches.length > MAX_MATCHES
     const finalMatches = truncated ? matches.slice(0, MAX_MATCHES) : matches

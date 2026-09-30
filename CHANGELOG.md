@@ -8,6 +8,7 @@ tagged release also ships native binaries for Linux, macOS, and Windows.
 
 ## Unreleased
 
+- **A search over a tree of identically-dated files returns the same results every time.** The result window was cut while reading ripgrep's output, so which matches survived depended on how far it had walked; the survivors are now ordered by modification time and then by path, and the read continues past the window so that ordering decides the cut. Ties broke at random before, which meant two identical searches could return different files.
 - Expand account, privacy, and usage documentation; clarify prepaid Ace access, fixed optional reloads, and current account requirements.
 
 ### Changed
