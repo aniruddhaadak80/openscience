@@ -328,6 +328,9 @@ public 50 the old detector named an example's `samples.csv` and the input
   a fresh user-visible authorization instead. Credentials stored before this
   release are bound on their next successful refresh. Reported by Saku0512
   (CWE-522).
+- **A payload size shown for approval no longer contradicts itself.** Just
+  under a megabyte was labelled in KB while the exact count beside it read as a
+  full one, and a size that could not be counted was shown as "NaN".
 - **Listing files now returns them in a stable order.** Files written at the
   same moment — by a checkout, a build, or a script — share a timestamp, so
   their order came from the filesystem and two identical searches could list
