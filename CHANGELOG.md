@@ -328,6 +328,11 @@ public 50 the old detector named an example's `samples.csv` and the input
   a fresh user-visible authorization instead. Credentials stored before this
   release are bound on their next successful refresh. Reported by Saku0512
   (CWE-522).
+- **A remembered command is remembered for its subcommand, not for a flag.**
+  Approving `git --no-pager log` and later running something else under the same
+  tool could both match a saved rule built around the flag rather than the
+  subcommand that was actually approved.
+
 - **Listing files now returns them in a stable order.** Files written at the
   same moment — by a checkout, a build, or a script — share a timestamp, so
   their order came from the filesystem and two identical searches could list

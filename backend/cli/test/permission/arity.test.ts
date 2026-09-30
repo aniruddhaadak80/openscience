@@ -31,3 +31,16 @@ test("edge cases", () => {
   expect(BashArity.prefix(["single"])).toEqual(["single"])
   expect(BashArity.prefix(["git"])).toEqual(["git"])
 })
+
+test("flags are not counted as subcommand tokens", () => {
+  // The generated dictionary's own rule: flags never count, only subcommands.
+  // Counting one pinned it into the grant and dropped the real subcommand.
+  expect(BashArity.prefix(["git", "--no-pager", "log"])).toEqual(["git", "log"])
+  expect(BashArity.prefix(["docker", "--config", "run", "nginx"])).toEqual(["docker", "run"])
+  expect(BashArity.prefix(["npm", "--silent", "run", "dev"])).toEqual(["npm", "run", "dev"])
+})
+
+test("a command that is only flags still yields its own name", () => {
+  expect(BashArity.prefix(["ls", "-la"])).toEqual(["ls"])
+  expect(BashArity.prefix(["-la"])).toEqual(["-la"])
+})

@@ -1,12 +1,18 @@
 export namespace BashArity {
   export function prefix(tokens: string[]) {
-    for (let len = tokens.length; len > 0; len--) {
-      const prefix = tokens.slice(0, len).join(" ")
+    // Flags are modifiers, not subcommands, and the generated dictionary below
+    // is keyed on subcommands. Counting one put it into the lookup key, so
+    // "git --no-pager log" matched "git --no-pager" instead of "git log" and
+    // the standing grant was scoped to a flag.
+    const words = tokens.filter((token) => !token.startsWith("-"))
+    const scoped = words.length > 0 ? words : tokens
+    for (let len = scoped.length; len > 0; len--) {
+      const prefix = scoped.slice(0, len).join(" ")
       const arity = ARITY[prefix]
-      if (arity !== undefined) return tokens.slice(0, arity)
+      if (arity !== undefined) return scoped.slice(0, arity)
     }
-    if (tokens.length === 0) return []
-    return tokens.slice(0, 1)
+    if (scoped.length === 0) return []
+    return scoped.slice(0, 1)
   }
 
   /* Generated with following prompt:
