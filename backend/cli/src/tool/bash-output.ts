@@ -229,8 +229,12 @@ export namespace BashOutput {
         this.keepTail(text)
         return
       }
+      // `<=` to match the byte test beside it and truncation.ts: a budget is
+      // the most that fits, so output of exactly maxLines lines is not an
+      // overflow. A strict `<` here made the line limit one line short of what
+      // the tool advertises, and cost the last line of an exactly-full run.
       const fits =
-        this.previewBytes + size <= this.options.maxBytes && this.previewLines + newlines < this.options.maxLines
+        this.previewBytes + size <= this.options.maxBytes && this.previewLines + newlines <= this.options.maxLines
       if (fits) {
         this.preview += text
         this.previewBytes += size
@@ -269,7 +273,7 @@ export namespace BashOutput {
           this.hitBytes = true
           break
         }
-        if (next >= 0 && lines + 1 >= lineBudget) break
+        if (next >= 0 && lines + 1 > lineBudget) break
         bytes += size
         lines += next >= 0 ? 1 : 0
         end = stop

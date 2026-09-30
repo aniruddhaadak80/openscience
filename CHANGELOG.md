@@ -328,6 +328,10 @@ public 50 the old detector named an example's `samples.csv` and the input
   a fresh user-visible authorization instead. Credentials stored before this
   release are bound on their next successful refresh. Reported by Saku0512
   (CWE-522).
+- **`bash` output keeps the line it was allowed.** The line budget was one line
+  shorter than the limit the tool advertises, so output of exactly the maximum
+  dropped its last line and was reported as truncated.
+
 - **Listing files now returns them in a stable order.** Files written at the
   same moment — by a checkout, a build, or a script — share a timestamp, so
   their order came from the filesystem and two identical searches could list
