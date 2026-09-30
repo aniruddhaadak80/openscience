@@ -328,6 +328,10 @@ public 50 the old detector named an example's `samples.csv` and the input
   a fresh user-visible authorization instead. Credentials stored before this
   release are bound on their next successful refresh. Reported by Saku0512
   (CWE-522).
+- **A credential store that cannot be copied is no longer reported as backed
+  up.** When the backup copy failed, the error still named a backup path and
+  then told the user to remove the only copy of their credentials.
+
 - **Listing files now returns them in a stable order.** Files written at the
   same moment — by a checkout, a build, or a script — share a timestamp, so
   their order came from the filesystem and two identical searches could list
