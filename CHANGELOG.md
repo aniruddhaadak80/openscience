@@ -328,6 +328,10 @@ public 50 the old detector named an example's `samples.csv` and the input
   a fresh user-visible authorization instead. Credentials stored before this
   release are bound on their next successful refresh. Reported by Saku0512
   (CWE-522).
+- **A background batch no longer skips work and reports success.** An item that
+  was itself `undefined` ended the queue early, and a concurrency below one ran
+  nothing at all.
+
 - **Listing files now returns them in a stable order.** Files written at the
   same moment — by a checkout, a build, or a script — share a timestamp, so
   their order came from the filesystem and two identical searches could list
