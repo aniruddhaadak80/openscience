@@ -131,6 +131,26 @@ Body`).bibliographies,
     expect(rewritten).toContain("![Fence](../figures/fence.png)")
   })
 
+  test("rewrites bracketed alt text and leaves unbalanced brackets alone", () => {
+    const markdown = [
+      "![Figure [a] b](../figures/bracketed.png)",
+      "![outer ![inner](../figures/inner.png)](../figures/outer.png)",
+      "![Reference [a] b][bracket]",
+      "[bracket]: ../figures/bracket.png",
+      "![Unbalanced ] b](../figures/unbalanced.png)",
+    ].join("\n")
+    const rewritten = rewritePreviewImages(
+      markdown,
+      "reports/paper.md",
+      (path) => `/raw?path=${encodeURIComponent(path)}`,
+    )
+
+    expect(rewritten).toContain("![Figure [a\\] b](/raw?path=figures%2Fbracketed.png)")
+    expect(rewritten).toContain("![outer ![inner\\](../figures/inner.png)](/raw?path=figures%2Fouter.png)")
+    expect(rewritten).toContain("![Reference [a\\] b](/raw?path=figures%2Fbracket.png)")
+    expect(rewritten).toContain("![Unbalanced ] b](../figures/unbalanced.png)")
+  })
+
   test("preserves CRLF offsets and ignores reference definitions inside code blocks", () => {
     const markdown = [
       "First line",
