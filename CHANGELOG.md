@@ -316,6 +316,11 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **A command's numbered arguments are now listed in the order they are filled
+  in.** The placeholders were collected as text and then ordered as text, so a
+  command taking ten or more of them reported `$1`, `$10`, `$2` and the rest,
+  and the `hints` the API returns for that command did not match the order the
+  arguments are actually substituted in.
 - **Security: a remote MCP server's refresh token and client secret are only
   ever sent to the authorization server that issued them.** Before, every token
   refresh re-read the resource's protected-resource metadata to find the
