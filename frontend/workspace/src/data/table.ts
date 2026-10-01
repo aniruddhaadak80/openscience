@@ -68,7 +68,9 @@ function delimited(text: string, delimiter: string) {
       continue
     }
     if (char === "\n" || char === "\r") {
-      pushRow()
+      // A blank line carries no cell, and the last push below is already
+      // guarded against one, so the row would otherwise be an all-empty entry.
+      if (state.cell || state.row.length) pushRow()
       state.index += char === "\r" && next === "\n" ? 2 : 1
       continue
     }

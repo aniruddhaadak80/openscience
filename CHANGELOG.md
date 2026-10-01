@@ -316,6 +316,11 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **A blank line in a CSV or TSV preview is no longer counted as a row.** The
+  delimited parser ended a row on every newline without checking whether the
+  line held any cells, so a file that separated blocks with an empty line
+  gained an all-empty row: the table showed one row too many, and its row count
+  and per-column summaries were off by the number of blank lines.
 - **Security: a remote MCP server's refresh token and client secret are only
   ever sent to the authorization server that issued them.** Before, every token
   refresh re-read the resource's protected-resource metadata to find the
