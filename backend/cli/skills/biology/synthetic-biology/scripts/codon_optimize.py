@@ -376,8 +376,8 @@ def fix_gc_content(codons, organism, target_min=0.40, target_max=0.60, window=30
         codon_end = min(win_end // 3 + 1, len(codons))
 
         for ci in range(codon_start, codon_end):
-            current_gc = gc_content("".join(codons))
-            if target_min <= current_gc <= target_max:
+            window_gc = gc_content("".join(codons)[win_start:win_end])
+            if target_min <= window_gc <= target_max:
                 break
 
             original = codons[ci]
@@ -387,16 +387,18 @@ def fix_gc_content(codons, organism, target_min=0.40, target_max=0.60, window=30
 
             alternatives = synonymous_codons_for(original, organism)
             best_alt = original
-            best_diff = abs(gc_content("".join(codons)) - 0.50)
+            best_diff = abs(window_gc - 0.50)
 
             for alt in alternatives:
                 if alt == original:
                     continue
                 test_codons = codons.copy()
                 test_codons[ci] = alt
-                new_gc = gc_content("".join(test_codons))
+                new_gc = gc_content("".join(test_codons)[win_start:win_end])
                 diff = abs(new_gc - 0.50)
-                if diff < best_diff and target_min <= new_gc <= target_max:
+                # Only a step closer to the midpoint counts: a window outside the
+                # range often needs several single-codon moves to get back inside.
+                if diff < best_diff:
                     best_alt = alt
                     best_diff = diff
 
