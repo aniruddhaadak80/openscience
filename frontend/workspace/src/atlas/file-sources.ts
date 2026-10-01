@@ -247,6 +247,10 @@ export function findFilesystemGrant(
 export function requestedFolder(target: string) {
   const file = normalizeFilePath(target)
   const index = file.lastIndexOf("/")
-  if (index <= 0) return file
-  return file.slice(0, index)
+  if (index < 0) return file
+  // A file at a root has nothing before its separator, so truncating there
+  // yields the file itself or a bare drive letter, which the server would read
+  // as a folder relative to the working directory. Keep the root's separator.
+  const folder = file.slice(0, index)
+  return folder.includes("/") ? folder : file.slice(0, index + 1)
 }

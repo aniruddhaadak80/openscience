@@ -316,6 +316,11 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **Opening a file that sits at a path root now names the root as its folder.**
+  The folder was everything before the last separator, so a file at a root had
+  nothing before it and the file itself was returned; on Windows the bare drive
+  letter was returned, which the server reads as a folder relative to the
+  working directory rather than the root of that drive.
 - **Security: a remote MCP server's refresh token and client secret are only
   ever sent to the authorization server that issued them.** Before, every token
   refresh re-read the resource's protected-resource metadata to find the
