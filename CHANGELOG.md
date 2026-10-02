@@ -1141,6 +1141,13 @@ public 50 the old detector named an example's `samples.csv` and the input
   needs, newest-eligible first.
 - **Hosted Boltz-2 and OpenFold3 runs finish instead of ending in "status polling returned non-terminal HTTP 404".** NVIDIA's Boltz-2 NIM always answers `pae: null` and `pde: null` (deprecated in its JSON response), and OpenFold3 answers `iptm_score: null` for a single-chain input, which has no interface to score. The output schemas rejected both, so every completed result was discarded, no artifacts were written, and the run fell through to a status route that answers 404 for these synchronous NIMs. Both nulls now parse. A response NVIDIA marks fulfilled that still fails its output schema is reported as that, naming the offending fields (paths and types, never response values), and is no longer polled.
 - **An approval says what it is for.** Asking to run Python, R or a shell command showed a card that read "Approval required" twice, over a code cell folded shut, so the most common request in the app asked for a decision about code you could not see. The card now names it ("Run Python code", with the step's title and length, or "Run a shell command" with the command), and the cell's source stays open for as long as the request is.
+- **The CFSE proliferation script now says when a channel has nothing to
+  analyse.** Events at or below zero are dropped before the log transform, so a
+  channel that reads entirely at zero - an uncompensated detector channel, or a
+  column read from the wrong row - left nothing behind, and the range print died
+  on an empty array with a raw NumPy error instead of a reason. The channel and
+  the count are now named and the run stops, as it already did for a missing
+  file or a missing column.
 
 ## v2.0.115 – v2.0.119 — 2026-09-17
 

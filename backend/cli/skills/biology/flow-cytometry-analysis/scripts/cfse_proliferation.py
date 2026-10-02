@@ -439,6 +439,12 @@ def main():
     if n_removed > 0:
         print(f"  Removed {n_removed:,} non-positive events before log transform.")
     cfse_positive = cfse_values[positive_mask]
+    if cfse_positive.size == 0:
+        print(
+            f"ERROR: No positive events in channel '{channel_label}' to log transform.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     # Log10 transform
     cfse_log = np.log10(cfse_positive)
