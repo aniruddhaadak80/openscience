@@ -33,7 +33,7 @@ export namespace GpuInventory {
         return [
           {
             index: number(cells[0]),
-            name: cells[1] ?? "GPU",
+            name: cells[1] === undefined || cells[1] === "" ? "GPU" : cells[1],
             memoryTotalMB: number(cells[2]),
             memoryUsedMB: number(cells[3]),
             utilization: Math.min(100, Math.max(0, number(cells[4]))),

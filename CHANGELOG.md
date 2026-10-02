@@ -316,6 +316,9 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **A GPU with a blank name in `nvidia-smi` output is labelled `GPU` instead of
+  nothing.** The fallback used `??`, which only covers a missing cell, so an
+  empty name cell passed through and the GPU rendered with a blank label.
 - **Security: a remote MCP server's refresh token and client secret are only
   ever sent to the authorization server that issued them.** Before, every token
   refresh re-read the resource's protected-resource metadata to find the
