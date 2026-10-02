@@ -316,6 +316,11 @@ public 50 the old detector named an example's `samples.csv` and the input
 
 ### Fixed
 
+- **A prompt window of zero now returns no prompts instead of all of them.**
+  `externalPrompts` bounded its result with `slice(-limit)` and `slice(-tail)`,
+  and `slice(-0)` is `slice(0)`, which keeps everything, so a caller asking for
+  no prompts — or for no tail text — received the entire prompt.
+
 - **Security: a remote MCP server's refresh token and client secret are only
   ever sent to the authorization server that issued them.** Before, every token
   refresh re-read the resource's protected-resource metadata to find the
