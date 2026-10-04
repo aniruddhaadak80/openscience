@@ -9,11 +9,11 @@ tagged release also ships native binaries for Linux, macOS, and Windows.
 ## Unreleased
 
 - - - A `ProxyJump` list read from `~/.ssh/config` keeps every hop instead
-  of
+      of
 
 - - A `ProxyJump` list read from `~/.ssh/config` keeps every hop instead of
-  only the first, so a two-hop jump host is no longer imported as a one-hop
-  value with a trailing comma.
+    only the first, so a two-hop jump host is no longer imported as a one-hop
+    value with a trailing comma.
 
 - Keep legacy home configuration below canonical user and project settings, preserve inline overrides, and push the selected repository branch to its own tracked destination.
 - Scientific helpers correct GC content within the requested codon window and target band, report unusable CFSE channels clearly, and match BRENDA transformation keywords consistently across letter case. GPU inventory gives unnamed devices a readable fallback label.
