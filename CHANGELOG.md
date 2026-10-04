@@ -11,10 +11,10 @@ tagged release also ships native binaries for Linux, macOS, and Windows.
 -
 
 - - - Substitute the `data` table placeholder in Hugging Face dataset SQL
-  even
+      even
 
 - - Match the `data` table placeholder in Hugging Face dataset SQL
-  regardless
+    regardless
 
 - - Substitute the `data` table placeholder in Hugging Face dataset SQL even
 
