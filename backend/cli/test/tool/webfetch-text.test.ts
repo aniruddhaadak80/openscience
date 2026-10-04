@@ -29,7 +29,9 @@ describe("extractTextFromHTML", () => {
   })
 
   test("keeps script and style content out of the result", async () => {
-    const text = await extractTextFromHTML("<div><script>var a = 1</script><style>.a{}</style><iframe>frame</iframe>Text.</div>")
+    const text = await extractTextFromHTML(
+      "<div><script>var a = 1</script><style>.a{}</style><iframe>frame</iframe>Text.</div>",
+    )
     expect(text).toBe("Text.")
   })
 })
