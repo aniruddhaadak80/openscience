@@ -2848,9 +2848,7 @@ test("a Modal call reaches the same live job panel as compute_job instead of a b
   // And the live panel behind "View current job" is reachable, not only for compute_job.
   host.querySelector<HTMLElement>('[data-component="tool-trigger"]')!.click()
   await settle()
-  const toggle = [...host.querySelectorAll("button")].find((button) =>
-    button.textContent?.includes("View current job"),
-  )
+  const toggle = [...host.querySelectorAll("button")].find((button) => button.textContent?.includes("View current job"))
   expect(toggle).toBeTruthy()
 })
 
