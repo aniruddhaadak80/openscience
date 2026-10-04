@@ -467,8 +467,7 @@ export namespace LLM {
     // "_noop" placeholder stream() appends never reaches the caller's set.
     const tools: Record<string, Tool> = {}
     for (const [id, value] of Object.entries(input.tools)) {
-      if (ToolVisibility.enabled(id, { permission: input.agent.permission, tools: input.user.tools }))
-        tools[id] = value
+      if (ToolVisibility.enabled(id, { permission: input.agent.permission, tools: input.user.tools })) tools[id] = value
     }
     return tools
   }
