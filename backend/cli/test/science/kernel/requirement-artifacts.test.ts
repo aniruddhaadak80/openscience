@@ -54,11 +54,7 @@ describe("requirementArtifacts", () => {
   })
 
   test("keeps the valid pins around a line that carries none", () => {
-    const requirements = [
-      pin("numpy", "1.26.4", "a"),
-      "requests>=2.31",
-      pin("scipy", "1.11.4", "b"),
-    ].join("\n")
+    const requirements = [pin("numpy", "1.26.4", "a"), "requests>=2.31", pin("scipy", "1.11.4", "b")].join("\n")
     expect(requirementArtifacts(requirements).map((item) => item.pin)).toEqual(["numpy==1.26.4", "scipy==1.11.4"])
   })
 })
