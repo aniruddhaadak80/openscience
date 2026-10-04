@@ -9,11 +9,11 @@ tagged release also ships native binaries for Linux, macOS, and Windows.
 ## Unreleased
 
 - - - A `Range` header on a raw file download that names an unknown range
-  unit
+      unit
 
 - - A `Range` header on a raw file download that names an unknown range unit
-  is now ignored and serves the whole file, as RFC 9110 requires, instead of
-  answering `416 Range Not Satisfiable`.
+    is now ignored and serves the whole file, as RFC 9110 requires, instead of
+    answering `416 Range Not Satisfiable`.
 
 - Keep legacy home configuration below canonical user and project settings, preserve inline overrides, and push the selected repository branch to its own tracked destination.
 - Scientific helpers correct GC content within the requested codon window and target band, report unusable CFSE channels clearly, and match BRENDA transformation keywords consistently across letter case. GPU inventory gives unnamed devices a readable fallback label.
