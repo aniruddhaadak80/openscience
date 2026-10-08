@@ -190,3 +190,5 @@ outside the project and loads it through the public plugin package with
 the execution sandbox enabled, executes it through the public HTTP runtime and a
 deterministic local provider, verifies its rich result through the messages API,
 checks a configured denial, and checks removal from discovery after uninstall.
+t e s t 3  
+ 
