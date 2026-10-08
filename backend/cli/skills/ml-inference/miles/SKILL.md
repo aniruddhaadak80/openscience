@@ -179,7 +179,7 @@ For online SFT of draft model during training:
 
 ## Configuration Reference
 
-miles inherits all slime arguments. See [slime API Reference](../slime/references/api-reference.md) for the complete list.
+miles inherits all slime arguments. See [slime API Reference](../../coding/slime/references/api-reference.md) for the complete list.
 
 ### Cluster Resources (from slime)
 
@@ -278,7 +278,7 @@ class Sample:
     rollout_routed_experts: list[list[int]]  # MoE routing for R3
 ```
 
-See [slime API Reference](../slime/references/api-reference.md) for the complete Sample definition.
+See [slime API Reference](../../coding/slime/references/api-reference.md) for the complete Sample definition.
 
 ---
 
