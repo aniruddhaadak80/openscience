@@ -277,13 +277,13 @@ cp assets/analysis_template.py my_analysis.py
 python my_analysis.py
 ```
 
-### reference/standard_workflow.md
+### references/standard_workflow.md
 Detailed step-by-step workflow with explanations for each stage.
 
-### reference/api_reference.md
+### references/api_reference.md
 Quick function reference organized by module.
 
-### reference/plotting_guide.md
+### references/plotting_guide.md
 Comprehensive visualization guide for publication-quality figures.
 
 ## Detailed Reference Guides
