@@ -1,4 +1,4 @@
----
+﻿---
 name: neuropixels-analysis
 description: Neuropixels neural recording analysis. Load SpikeGLX/OpenEphys data, preprocess, motion correction, Kilosort4 spike sorting, quality metrics, Allen/IBL curation, AI-assisted visual analysis, for Neuropixels 1.0/2.0 extracellular electrophysiology. Use when working with neural recordings, spike sorting, extracellular electrophysiology, or when the user mentions Neuropixels, SpikeGLX, Open Ephys, Kilosort, quality metrics, or unit curation.
 category: biology
@@ -215,7 +215,7 @@ metrics.to_csv('quality_metrics.csv')
 
 ## Common Pitfalls and Best Practices
 
-1. **Always check drift** before spike sorting - drift > 10μm significantly impacts quality
+1. **Always check drift** before spike sorting - drift > 10Î¼m significantly impacts quality
 2. **Use phase_shift** for Neuropixels 1.0 probes (not needed for 2.0)
 3. **Save preprocessed data** to avoid recomputing - use `rec.save(folder='preprocessed/')`
 4. **Use GPU** for Kilosort4 - it's 10-50x faster than CPU alternatives
@@ -277,13 +277,13 @@ cp assets/analysis_template.py my_analysis.py
 python my_analysis.py
 ```
 
-### reference/standard_workflow.md
+### references/standard_workflow.md
 Detailed step-by-step workflow with explanations for each stage.
 
-### reference/api_reference.md
+### references/api_reference.md
 Quick function reference organized by module.
 
-### reference/plotting_guide.md
+### references/plotting_guide.md
 Comprehensive visualization guide for publication-quality figures.
 
 ## Detailed Reference Guides
@@ -326,21 +326,21 @@ pip install ibl-neuropixel ibllib
 
 ```
 project/
-├── raw_data/
-│   └── recording_g0/
-│       └── recording_g0_imec0/
-│           ├── recording_g0_t0.imec0.ap.bin
-│           └── recording_g0_t0.imec0.ap.meta
-├── preprocessed/           # Saved preprocessed recording
-├── motion/                 # Motion estimation results
-├── sorting_output/         # Spike sorter output
-├── analyzer/               # SortingAnalyzer (waveforms, metrics)
-├── phy_export/             # For manual curation
-├── ai_curation/            # AI analysis reports
-└── results/
-    ├── quality_metrics.csv
-    ├── curation_labels.json
-    └── output.nwb
+â”œâ”€â”€ raw_data/
+â”‚   â””â”€â”€ recording_g0/
+â”‚       â””â”€â”€ recording_g0_imec0/
+â”‚           â”œâ”€â”€ recording_g0_t0.imec0.ap.bin
+â”‚           â””â”€â”€ recording_g0_t0.imec0.ap.meta
+â”œâ”€â”€ preprocessed/           # Saved preprocessed recording
+â”œâ”€â”€ motion/                 # Motion estimation results
+â”œâ”€â”€ sorting_output/         # Spike sorter output
+â”œâ”€â”€ analyzer/               # SortingAnalyzer (waveforms, metrics)
+â”œâ”€â”€ phy_export/             # For manual curation
+â”œâ”€â”€ ai_curation/            # AI analysis reports
+â””â”€â”€ results/
+    â”œâ”€â”€ quality_metrics.csv
+    â”œâ”€â”€ curation_labels.json
+    â””â”€â”€ output.nwb
 ```
 
 ## Additional Resources
@@ -352,4 +352,5 @@ project/
 - **Allen Institute ecephys**: https://github.com/AllenInstitute/ecephys_spike_sorting
 - **Bombcell (Automated QC)**: https://github.com/Julie-Fabre/bombcell
 - **SpikeAgent (AI Curation)**: https://github.com/SpikeAgent/SpikeAgent
+
 
