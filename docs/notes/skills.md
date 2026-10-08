@@ -1,8 +1,8 @@
-# Skills: where they come from and how they resolve
+﻿# Skills: where they come from and how they resolve
 
 A **skill** is an instruction bundle (`SKILL.md` with `name`/`description`/`category`
 frontmatter and a body) that the agent loads on demand to prime itself for a task.
-This note explains where skills are discovered and how a bare name resolves —
+This note explains where skills are discovered and how a bare name resolves â€”
 useful when a skill is unexpectedly "not found".
 
 The [skill runtime design](skill-runtime-design.md) explains metadata discovery,
@@ -13,19 +13,19 @@ bounded search, instruction loading, and the execution-authority boundary.
 The catalog is assembled in `backend/cli/src/skill/skill.ts` from several sources,
 keyed by skill `name`:
 
-1. **Default skills** — the repository's `backend/cli/skills/` tree. Release
+1. **Default skills** â€” the repository's `backend/cli/skills/` tree. Release
    builds embed the complete tree, including scripts, references, assets, and
    templates, in a verified archive. No login or download is required.
-2. **Installed skills** — Git-installed packs under
+2. **Installed skills** â€” Git-installed packs under
    `~/.openscience/installed-skills/`, plus compatible global
    `~/.claude/skills/` packs.
-3. **Personal skills** — authored through Customize or
+3. **Personal skills** â€” authored through Customize or
    `openscience skill new`, stored under `~/.openscience/user-skills/`.
    Global OpenScience skill directories also have user precedence.
-4. **Project skills** — `.openscience/{skill,skills}` and `.claude/skills`
+4. **Project skills** â€” `.openscience/{skill,skills}` and `.claude/skills`
    directories committed to the current project, plus `skills.paths` entries.
 
-5. **Registered roots** — directories added at runtime through
+5. **Registered roots** â€” directories added at runtime through
    `POST /settings/skills/paths` (`Skill.addRoot`), per project instance, loaded
    with project precedence exactly like `skills.paths`; `persist` writes them
    to the global or project config. `Skill.roots()` reports every root with
@@ -42,7 +42,7 @@ are ignored.
 
 A skill author can set `disabled: true` in `SKILL.md` frontmatter to keep that
 specific copy out of the catalog. A disabled copy does not shadow an enabled copy
-from another source; normal project → user → installed → default
+from another source; normal project â†’ user â†’ installed â†’ default
 precedence still applies among the enabled copies.
 
 ## Two tiers: core and library
@@ -71,7 +71,7 @@ Retired names (`scientific-writing`, `citation-management`, `hypothesis-generati
 `skill({name})`, `/name` invocations and installer entries. A real skill carrying
 a retired name still wins over the alias.
 
-Specialists (`backend/cli/src/agent/specialist.ts`) are Research workers with a
+Specialists (`backend/cli/src/agent/agent.ts`) are Research workers with a
 domain contract, the full index of their library categories (`<domain-skills>`),
 and their domain tools; the lead selects one through the Task tool's
 `specialist` parameter (`ml`, `biology`, `physics`, `chemistry`, or the read-only
@@ -81,8 +81,8 @@ previously gated to the biology agent.
 
 ## Resolution
 
-`Skill.get(name)` looks up the assembled name→skill map. On a name collision the
-precedence is project → user → installed → default. Within a source directory,
+`Skill.get(name)` looks up the assembled nameâ†’skill map. On a name collision the
+precedence is project â†’ user â†’ installed â†’ default. Within a source directory,
 paths are sorted and the later path wins. Closer project directories override
 ancestors. Explicit `skills.paths` entries are processed last, in configured order,
 with project precedence. If a name isn't
@@ -101,3 +101,4 @@ openscience skill list --all      # everything discovered on this install
 ```
 
 Pin extra skill folders per project with `skills.paths` in `openscience.json`.
+
