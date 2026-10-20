@@ -1,3 +1,4 @@
+import { ResearchDatabase } from "./database"
 import { Log } from "../util/log"
 import path from "path"
 import fs from "fs/promises"
@@ -15,6 +16,7 @@ import { LockCoordination } from "@/util/lock-coordination"
 export namespace Storage {
   const log = Log.create({ service: "storage" })
   const timeout = 10_000
+  const database = ResearchDatabase.create(Global.Path.data)
   const grace = 5_000
 
   type Migration = (dir: string) => Promise<void>
@@ -193,7 +195,23 @@ export namespace Storage {
     }
   })
 
+  /** Initialize legacy storage before any shared research-database access. */
+  export async function research() {
+    await state()
+    return database
+  }
+
   export async function remove(key: string[]) {
+    if (ResearchDatabase.handles(key)) {
+      const dir = await state().then((value) => value.dir)
+      return withErrorHandling(async () => {
+        await using operation = await DataRootBarrier.enter(database.filepath)
+        await database.remove(key)
+        await fs.unlink(path.join(dir, ...key) + ".json").catch((error: NodeJS.ErrnoException) => {
+          if (error.code !== "ENOENT") throw error
+        })
+      })
+    }
     const dir = await state().then((x) => x.dir)
     const target = path.join(dir, ...key) + ".json"
     return withErrorHandling(async () => {
@@ -208,6 +226,10 @@ export namespace Storage {
   }
 
   export async function read<T>(key: string[]) {
+    if (ResearchDatabase.handles(key)) {
+      await state()
+      return withErrorHandling(() => database.read<T>(key))
+    }
     const dir = await state().then((x) => x.dir)
     const target = path.join(dir, ...key) + ".json"
     return withErrorHandling(async () => {
@@ -337,6 +359,10 @@ export namespace Storage {
   }
 
   export async function update<T>(key: string[], fn: (draft: T) => void) {
+    if (ResearchDatabase.handles(key)) {
+      await state()
+      return withErrorHandling(() => database.update(key, fn))
+    }
     const dir = await state().then((x) => x.dir)
     const target = path.join(dir, ...key) + ".json"
     return withErrorHandling(async () => {
@@ -351,6 +377,10 @@ export namespace Storage {
   }
 
   export async function write<T>(key: string[], content: T) {
+    if (ResearchDatabase.handles(key)) {
+      await state()
+      return withErrorHandling(() => database.write(key, content))
+    }
     const dir = await state().then((x) => x.dir)
     const target = path.join(dir, ...key) + ".json"
     return withErrorHandling(async () => {
@@ -365,6 +395,10 @@ export namespace Storage {
    * interprocess lock. Callers use this when computing a revision from the
    * previous value; splitting read() + write() would lose concurrent changes. */
   export async function upsert<T>(key: string[], fn: (current: T | undefined) => T): Promise<T> {
+    if (ResearchDatabase.handles(key)) {
+      await state()
+      return withErrorHandling(() => database.upsert(key, fn))
+    }
     const dir = await state().then((x) => x.dir)
     const target = path.join(dir, ...key) + ".json"
     return withErrorHandling(async () => {
@@ -407,6 +441,7 @@ export namespace Storage {
   const glob = new Bun.Glob("**/*.json")
   export async function list(prefix: string[], attempt = 0): Promise<string[][]> {
     const dir = await state().then((x) => x.dir)
+    if (ResearchDatabase.handles(prefix)) return database.list(prefix)
     const root = path.join(dir, ...prefix)
     try {
       const result = await Array.fromAsync(
@@ -415,8 +450,11 @@ export namespace Storage {
           onlyFiles: true,
         }),
       ).then((results) => results.map((x) => [...prefix, ...x.slice(0, -5).split(path.sep)]))
-      result.sort()
-      return result
+      const keys = prefix.length
+        ? result
+        : [...result.filter((key) => !ResearchDatabase.handles(key)), ...(await database.list([]))]
+      keys.sort()
+      return keys
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code
       if (code === "ENOENT" || code === "ENOTDIR") {

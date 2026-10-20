@@ -8,6 +8,48 @@ tagged release also ships native binaries for Linux, macOS, and Windows.
 
 ## Unreleased
 
+- Record failed OAuth structured-output usage once per model call, even when object validation fails after the stream ends.
+
+- Classify Ace calls as managed when a local Dashboard proxy handles them, so worker traces and logging health retain their Wallet route during local testing.
+
+- Keep delegated Task replay records in the research database, including migration of existing attempts.
+
+- Preserve distinct billed and requested model names in provider billing imports; explicit alias annotations support reconciliation without guessing model mappings.
+
+- Preserve provider-reported cache-write counters from OpenAI and Azure Responses, including explicit zero, instead of losing them in SDK parsing or replacing them with catalog estimates.
+
+- Separate provider-reported, estimated, imported and historical cost evidence in `openscience stats`; retain exact amounts, mark missing evidence Unknown, and label compatibility accounting separately.
+
+- Keep the task context and settled-charge lookup accessible before the first model response, including failed or cancelled first attempts.
+
+- Show server-side HTTP dispatch, failure, cancellation and timeout coverage in logging health, including Ace settlement checks for calls without model responses.
+
+- Import later legacy-root session records without reviving deleted backups, and provide `debug legacy-import` to recover ambiguous records from earlier experimental databases.
+
+- Import normalized provider billing evidence locally, reconcile unique request IDs, and keep imported charges and credits separate from provider-reported costs, estimates and historical accounting in Usage and CSV exports.
+
+- Add an explicit settled Ace charge lookup in the task context panel, including worker calls, exact Wallet receipt amounts and separate pending, unknown and inconsistent settlement states.
+
+- Persist model HTTP attempts, tool trace bindings, upload events and delivery receipts in SQLite. Failed, cancelled and retried calls retain stable identities; logging health shows delayed uploads and safe rejection diagnostics.
+
+- Store sessions, messages, tool parts, todos and diffs in a transactional SQLite database, preserving existing IDs and retaining original JSON migration backups.
+
+- Include workspace-scoped receipt-only deliveries in server logging health, separating valid replay-only acknowledgements from lost accepted events.
+
+- Retain experiment provenance after artifact delivery completes, preserve OpenRouter cache-write evidence, and honor approved token corrections in server logging-health checks.
+
+- Add an explicit server logging-health check under Permissions → Data & privacy, separating account/device/workspace-scoped receipt, usage and Ace settlement findings from local queue state. Older servers and incomplete evidence remain explicit.
+
+- Retain bound compute-job provenance with experiment runs and expose it in run details, preserving explicit gaps and execution evidence after database reopening.
+
+- Add editable research question and hypothesis fields to autoresearch studies, preserved in the database, study ledger, agent tools and driver updates.
+
+- Preserve nullable provider token counts and cost provenance on completed steps. Show per-call routes, unknown usage, separate cost categories and call/hold identities in the conversation context panel.
+
+- Label subscription coverage and unknown costs in model-call audits, retaining provider-reported costs separately from historical step accounting.
+
+- Expand device logging health in Data & privacy with queue counts visible during errors, rejected-record guidance, and the last delivery acknowledgement.
+
 - Find Git Bash in Git for Windows UCRT64 installations so local compute jobs can start.
 
 - Decode compressed network responses, enforce streamed byte limits, reject partial/aborted data before caching, and cancel DNS waits promptly. Add opt-in Cloudflare DNS-over-HTTPS for TUN Fake IP environments while retaining private-address protection.

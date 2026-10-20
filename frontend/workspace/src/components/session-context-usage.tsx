@@ -117,8 +117,9 @@ export function SessionContextUsage(props: SessionContextUsageProps) {
       </Show>
       <div class="flex items-center gap-2">
         <span class="text-text-invert-strong">{cost()}</span>
-        <span class="text-text-invert-base">{language.t("context.usage.cost")}</span>
+        <span class="text-text-invert-base">Recorded accounting</span>
       </div>
+      <div class="text-text-invert-base">May include estimates; subscription fees excluded.</div>
       <Show when={spend().workers > 0}>
         <div class="text-text-invert-base">
           {language.t("context.usage.workerCost", { cost: usd().format(spend().workers) })}
@@ -133,7 +134,20 @@ export function SessionContextUsage(props: SessionContextUsageProps) {
         <Switch>
           <Match when={variant() === "indicator"}>{circle()}</Match>
           <Match when={variant() === "header"}>
-            <Show when={context()}>
+            <Show
+              when={context()}
+              fallback={
+                <button
+                  type="button"
+                  class="workspace-header__context"
+                  onClick={openContext}
+                  aria-label={language.t("context.usage.view")}
+                >
+                  {circle()}
+                  <span class="workspace-header__context-tokens">{language.t("session.tab.context")}</span>
+                </button>
+              }
+            >
               {(ctx) => (
                 <button
                   type="button"

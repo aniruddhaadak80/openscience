@@ -1,3 +1,4 @@
+import { StudyFraming } from "./StudyFraming"
 import { createEffect, createMemo, createResource, createSignal, For, onCleanup, Show, type JSX } from "solid-js"
 import type { ExperimentRun, ExperimentSeries, LocalGpu, Study, StudyOverview } from "@synsci/sdk/v2/client"
 import { Button } from "@synsci/ui/button"
@@ -347,6 +348,20 @@ export function AutoresearchPane(): JSX.Element {
             <Show when={run().killReason}>
               <p class="ar-run__reason">{run().killReason}</p>
             </Show>
+            <Show when={run().provenance} fallback={<p>Execution provenance was not captured for this run.</p>}>
+              {(provenance) => (
+                <details>
+                  <summary>Recorded execution provenance</summary>
+                  <p>
+                    Compute-job evidence retained with this run. Unavailable fields are explicit; this is not a complete
+                    replay bundle.
+                  </p>
+                  <pre style={{ "white-space": "pre-wrap", "overflow-wrap": "anywhere" }}>
+                    {JSON.stringify(provenance(), null, 2)}
+                  </pre>
+                </details>
+              )}
+            </Show>
             <dl class="ar-facts">
               <For each={Object.entries({ ...(run().config ?? {}), ...(run().summary ?? {}) })}>
                 {([name, value]) => (
@@ -614,6 +629,18 @@ export function AutoresearchPane(): JSX.Element {
                 <Show when={panel() === "about"}>
                   <div class="ar-about">
                     <p>{current().purpose}</p>
+                    <StudyFraming
+                      study={current()}
+                      save={async (body) => {
+                        const response = await sdk.request(`/experiments/studies/${current().id}`, {
+                          method: "PATCH",
+                          headers: { "content-type": "application/json" },
+                          body: JSON.stringify(body),
+                        })
+                        if (!response.ok) throw new Error("Study update failed")
+                        bump()
+                      }}
+                    />
                     <dl class="ar-facts">
                       <div>
                         <dt>Target</dt>

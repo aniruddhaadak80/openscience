@@ -1,5 +1,6 @@
 import path from "node:path"
 import z from "zod"
+import { ProvenanceEnvelope } from "@/science/provenance/envelope"
 import { Experiments } from "@/experiments"
 import { StudyDriver } from "@/experiments/driver"
 import { GpuInventory } from "@/experiments/gpu"
@@ -77,7 +78,7 @@ async function studyApproval(ctx: Tool.Context, study: Experiments.Study) {
   return `Remote runs approved for this study on ${study.target.kind}; each dispatch is recorded with its plan digest.`
 }
 
-const Action = z.enum(["create", "status", "propose", "start", "record", "drop", "conclude", "reopen"])
+const Action = z.enum(["create", "status", "propose", "start", "record", "drop", "conclude", "reopen", "update"])
 type Metadata = {
   study?: Experiments.Study
   ideas?: Experiments.Idea[]
@@ -103,6 +104,8 @@ export const StudyTool = Tool.define("study", {
     // create
     name: z.string().trim().min(1).max(120).optional(),
     purpose: z.string().trim().min(1).max(4_000).optional(),
+    question: z.string().trim().max(4_000).optional().describe("The research question; create or update."),
+    hypothesis: z.string().trim().max(4_000).optional().describe("The testable prediction; create or update."),
     metric: z.string().trim().min(1).max(120).optional(),
     direction: Experiments.Direction.optional(),
     target: Experiments.Target.optional(),
@@ -259,6 +262,8 @@ export const StudyTool = Tool.define("study", {
         sessionID: ctx.sessionID,
         name: params.name,
         purpose: params.purpose,
+        question: params.question,
+        hypothesis: params.hypothesis,
         metric: params.metric,
         direction: params.direction,
         root,
@@ -292,6 +297,21 @@ export const StudyTool = Tool.define("study", {
 
     if (!current) {
       throw new Error("No study is active in this session. Create one with study create first.")
+    }
+
+    if (params.action === "update") {
+      if (params.question === undefined && params.hypothesis === undefined)
+        throw new Error("update needs question or hypothesis")
+      const updated = await Experiments.updateStudy(current.id, {
+        ...(params.question !== undefined && { question: params.question }),
+        ...(params.hypothesis !== undefined && { hypothesis: params.hypothesis }),
+      })
+      await StudyLedger.render(current.id)
+      return {
+        title: `Study updated: ${current.name}`,
+        metadata: { study: updated } satisfies Metadata as Metadata,
+        output: json(updated),
+      }
     }
 
     if (params.action === "status") {
@@ -460,13 +480,15 @@ export const StudyTool = Tool.define("study", {
           await Experiments.updateIdea(idea.id, { status: "queued", runID: undefined })
           throw error
         })
-      const job = (result.metadata as { job?: { id: string; status: string } }).job
+      const job = (result.metadata as { job?: { id: string; status: string; provenance?: ProvenanceEnvelope.Schema } })
+        .job
       if (!job) {
         await Experiments.finishRun(run.id, "failed", { killReason: "dispatch returned no job" })
         await Experiments.updateIdea(idea.id, { status: "queued", runID: undefined })
         throw new Error("The compute job was not dispatched")
       }
       await Experiments.bindJob(run.id, job.id)
+      if (job.provenance) await Experiments.recordProvenance(run.id, job.id, job.provenance)
       const bound = (await Experiments.getRun(run.id))!
       await Experiments.addEvent(current.id, "started", `${idea.title} started as run ${run.id} (job ${job.id})`, {
         runID: run.id,

@@ -68,6 +68,8 @@ import type {
   ExperimentsStudyControlResponses,
   ExperimentsStudyErrors,
   ExperimentsStudyResponses,
+  ExperimentsStudyUpdateErrors,
+  ExperimentsStudyUpdateResponses,
   FileAnnotationsCreateResponses,
   FileAnnotationsDeleteResponses,
   FileAnnotationsHistoryResponses,
@@ -325,6 +327,8 @@ import type {
   SessionPromptAsyncResponses,
   SessionPromptErrors,
   SessionPromptResponses,
+  SessionReceiptsErrors,
+  SessionReceiptsResponses,
   SessionRevertErrors,
   SessionRevertResponses,
   SessionShellErrors,
@@ -429,10 +433,15 @@ import type {
   SettingsUpdatesInstallResponses,
   SettingsUpdatesStageResponses,
   SettingsUpdatesStateResponses,
+  SettingsUsageBillingResponses,
+  SettingsUsageImportBillingResponses,
+  SettingsUsageImportsResponses,
   SettingsUsageLocalResponses,
   SettingsUsageLoggingGetResponses,
+  SettingsUsageLoggingHealthResponses,
   SettingsUsageLoggingUpdateResponses,
   SettingsUsageManagedResponses,
+  SettingsUsageRemoveImportResponses,
   SettingsWalletGetResponses,
   SubtaskPartInput,
   TextPartInput,
@@ -2023,9 +2032,121 @@ export class UsageLogging extends HeyApiClient {
       },
     })
   }
+
+  /**
+   * Read account, device and workspace-scoped server logging health for the last 24 hours
+   */
+  public health<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
+    return (options?.client ?? this.client).get<SettingsUsageLoggingHealthResponses, unknown, ThrowOnError>({
+      url: "/settings/usage-logging/health",
+      ...options,
+    })
+  }
 }
 
 export class Usage extends HeyApiClient {
+  /**
+   * List local provider billing imports
+   */
+  public imports<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
+    return (options?.client ?? this.client).get<SettingsUsageImportsResponses, unknown, ThrowOnError>({
+      url: "/settings/usage/imports",
+      ...options,
+    })
+  }
+
+  /**
+   * Import provider billing evidence locally
+   */
+  public importBilling<ThrowOnError extends boolean = false>(
+    parameters: {
+      schema_version: 1
+      provider: string
+      account_label: string
+      currency: "USD"
+      records: Array<{
+        billing_id: string
+        kind?: "charge" | "credit"
+        provider_request_id?: string
+        occurred_at: string
+        model?: string
+        requested_model?: string
+        amount_usd: string
+      }>
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "body", key: "schema_version" },
+            { in: "body", key: "provider" },
+            { in: "body", key: "account_label" },
+            { in: "body", key: "currency" },
+            { in: "body", key: "records" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<SettingsUsageImportBillingResponses, unknown, ThrowOnError>({
+      url: "/settings/usage/imports",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Remove a local billing import
+   */
+  public removeImport<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "path", key: "id" }] }])
+    return (options?.client ?? this.client).delete<SettingsUsageRemoveImportResponses, unknown, ThrowOnError>({
+      url: "/settings/usage/imports/{id}",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * List and reconcile imported billing evidence
+   */
+  public billing<ThrowOnError extends boolean = false>(
+    parameters?: {
+      start?: string
+      end?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "start" },
+            { in: "query", key: "end" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<SettingsUsageBillingResponses, unknown, ThrowOnError>({
+      url: "/settings/usage/billing",
+      ...options,
+      ...params,
+    })
+  }
+
   /**
    * Get local usage by day and model
    */
@@ -4023,6 +4144,34 @@ export class Session extends HeyApiClient {
   }
 
   /**
+   * Check settled Ace receipts for a task and its workers
+   */
+  public receipts<ThrowOnError extends boolean = false>(
+    parameters: {
+      sessionID: string
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "sessionID" },
+            { in: "query", key: "directory" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<SessionReceiptsResponses, SessionReceiptsErrors, ThrowOnError>({
+      url: "/session/{sessionID}/receipts",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
    * Get local harness trace
    *
    * Build one local, account-independent trace with effective harness manifests, composition transitions, attribution invariants, deterministic trajectory fingerprints, inference, tools, child agents, compute, artifacts, failures, costs, and timing. Hidden reasoning, prompt content, and copied tool outputs are excluded.
@@ -5485,6 +5634,47 @@ export class Experiments extends HeyApiClient {
       url: "/experiments/studies/{studyID}",
       ...options,
       ...params,
+    })
+  }
+
+  /**
+   * Update a study's research question and hypothesis
+   */
+  public studyUpdate<ThrowOnError extends boolean = false>(
+    parameters: {
+      studyID: string
+      directory?: string
+      question?: string
+      hypothesis?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "studyID" },
+            { in: "query", key: "directory" },
+            { in: "body", key: "question" },
+            { in: "body", key: "hypothesis" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).patch<
+      ExperimentsStudyUpdateResponses,
+      ExperimentsStudyUpdateErrors,
+      ThrowOnError
+    >({
+      url: "/experiments/studies/{studyID}",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
     })
   }
 

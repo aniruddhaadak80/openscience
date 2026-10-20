@@ -1,3 +1,4 @@
+import type { SettingsUsageLoggingGetResponses, SettingsUsageLoggingHealthResponses } from "@synsci/sdk/v2/client"
 import { afterAll, afterEach, expect, test } from "bun:test"
 import { once } from "node:events"
 import { createServer } from "node:http"
@@ -27,8 +28,18 @@ const ready = async (check: () => boolean) => {
 
 async function mount(error?: string) {
   const state = {
-    status: { enabled: true, signedIn: true, queued: 3, delivered: 7, quarantined: 0, error },
+    status: {
+      enabled: true,
+      signedIn: true,
+      queued: 3,
+      delivered: 7,
+      quarantined: 0,
+      lastDelivery: undefined as string | undefined,
+      error,
+    } as SettingsUsageLoggingGetResponses[200],
     reject: false,
+    health: undefined as SettingsUsageLoggingHealthResponses[200] | undefined,
+    healthReads: 0,
     writes: [] as { enabled: boolean }[],
   }
   const server = createServer(async (request, response) => {
@@ -42,6 +53,10 @@ async function mount(error?: string) {
       response.end(JSON.stringify(value))
     }
     if (request.method === "OPTIONS") return json(null, 204)
+    if (request.url === "/settings/usage-logging/health") {
+      state.healthReads++
+      return json(state.health ?? { state: "unavailable", reason: "unsupported" })
+    }
     if (request.url !== "/settings/usage-logging") return json({}, 404)
     if (request.method === "PUT") {
       const chunks: Buffer[] = []
@@ -114,4 +129,154 @@ test("refresh removes a resolved delivery error instead of retaining stale statu
   host.querySelector<HTMLButtonElement>("button")!.click()
   await ready(() => host.textContent?.includes("10 acknowledged") === true)
   expect(host.textContent).not.toContain("could not be verified")
+})
+
+test("delivery errors preserve counts and refresh shows rejected records and acknowledgement time", async () => {
+  const { state, host } = await mount("Trace delivery was not accepted (HTTP 503).")
+  expect(host.textContent).toContain("3 queued · 7 acknowledged")
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain("HTTP 503")
+  expect(host.textContent).toContain("No delivery has been acknowledged")
+  state.status.quarantined = 2
+  state.status.lastDelivery = "2026-10-18T10:00:00.000Z"
+  host.querySelector<HTMLButtonElement>("button")!.click()
+  await ready(() => host.textContent?.includes("2 rejected records") === true)
+  expect(host.textContent).toContain("2026-10-18T10:00:00.000Z")
+  expect(host.textContent).toContain("not retried automatically")
+  expect(host.textContent).toContain("does not verify complete model usage")
+  expect(state.writes).toEqual([])
+  expect(host.querySelector<HTMLInputElement>("input")?.checked).toBe(true)
+})
+
+const healthy: SettingsUsageLoggingHealthResponses[200] = {
+  state: "available",
+  report: {
+    schema_version: 1,
+    scope: "account_installation_workspace",
+    status: "healthy",
+    since: "2026-10-18T00:00:00Z",
+    until: "2026-10-18T01:00:00Z",
+    checked_at: "2026-10-18T01:00:01Z",
+    receipts: { deliveries: 1, receipt_only: 0, replayed_only: 0, anomalous: 0, orphaned_events: 0 },
+    usage: {
+      responses: 1,
+      projected: 1,
+      missing_projection: 0,
+      unknown_input: 0,
+      unknown_output: 0,
+      unknown_reasoning: 1,
+      unknown_cache_read: 0,
+      unknown_cache_write: 1,
+    },
+    managed: {
+      responses: 0,
+      pending: 0,
+      settled: 0,
+      not_charged: 0,
+      missing_call_id: 0,
+      missing_link: 0,
+      ambiguous_link: 0,
+      missing_hold: 0,
+      hold_mismatch: 0,
+      settled_missing_charge: 0,
+      duplicate_charge: 0,
+      token_mismatch: 0,
+      charge_amount_mismatch: 0,
+      unknown_charge_amount: 0,
+    },
+  },
+}
+const checkServer = (host: HTMLElement) =>
+  [...host.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Check server")!
+
+test("server checks are explicit and keep local queue evidence separate from stored evidence", async () => {
+  const { state, host } = await mount()
+  state.health = healthy
+  expect(state.healthReads).toBe(0)
+  checkServer(host).click()
+  await ready(() => host.textContent?.includes("No discrepancies found") === true)
+  expect(state.healthReads).toBe(1)
+  expect(host.textContent).toContain("3 queued · 7 acknowledged")
+  expect(host.textContent).toContain("3 queued and 0 rejected records are outside the server report")
+  expect(host.textContent).toContain("1 model responses · 1 usage records")
+  expect(host.textContent).toContain("An omitted field is not a token-count mismatch")
+  state.status.signedIn = false
+  window.dispatchEvent(new Event("openscience:account-changed"))
+  await ready(() => checkServer(host).disabled)
+  await ready(() => host.textContent?.includes("No records are sent while signed out") === true)
+  await ready(() => host.querySelector<HTMLInputElement>("input")?.disabled === false)
+  expect(host.textContent).not.toContain("No discrepancies found")
+})
+
+test("older servers remain explicitly unavailable and do not hide device delivery status", async () => {
+  const { host } = await mount()
+  checkServer(host).click()
+  await ready(() => host.textContent?.includes("does not support logging-health reports yet") === true)
+  expect(host.textContent).toContain("3 queued · 7 acknowledged")
+  expect(host.textContent).not.toContain("No discrepancies found")
+})
+
+test("receipt-only deliveries remain visible when there are no stored responses", async () => {
+  const { state, host } = await mount()
+  state.health = {
+    ...healthy,
+    report: {
+      ...healthy.report,
+      status: "attention",
+      receipts: { deliveries: 2, receipt_only: 2, replayed_only: 1, anomalous: 1, orphaned_events: 0 },
+      usage: { ...healthy.report.usage, responses: 0, projected: 0 },
+    },
+  }
+  checkServer(host).click()
+  await ready(() => host.textContent?.includes("Stored evidence needs attention") === true)
+  expect(host.textContent).toContain("2 deliveries · 2 without stored events (1 replay-only) · 1 inconsistent receipts")
+})
+
+test("refresh explains delayed queues and content-free delivery/rejection diagnostics", async () => {
+  const { state, host } = await mount()
+  state.status.oldestQueuedAt = "2026-10-18T00:00:00.000Z"
+  state.status.stalled = true
+  state.status.lastAttempt = {
+    deliveryID: "delivery_fixture",
+    startedAt: "2026-10-18T00:01:00.000Z",
+    httpStatus: 422,
+    state: "rejected",
+  }
+  state.status.rejection = { eventID: "event_fixture", reason: "http_422" }
+  host.querySelector<HTMLButtonElement>("button")!.click()
+  await ready(() => host.textContent?.includes("Last delivery attempt") === true)
+  expect(host.textContent).toContain("waiting more than five minutes")
+  expect(host.textContent).toContain("HTTP 422")
+  expect(host.textContent).toContain("event_fixture")
+  expect(state.healthReads).toBe(0)
+})
+
+test("server attempts expose failures and unknown Ace charges while old coverage stays explicit", async () => {
+  const { state, host } = await mount()
+  state.health = healthy
+  checkServer(host).click()
+  await ready(() => host.textContent?.includes("Failure and cancellation coverage is unknown") === true)
+  state.health = {
+    ...healthy,
+    report: {
+      ...healthy.report,
+      status: "incomplete",
+      attempts: {
+        calls: 4,
+        dispatched: 4,
+        completed: 0,
+        failed: 1,
+        cancelled: 1,
+        timed_out: 1,
+        pending: 1,
+        unclassified_requests: 2,
+      },
+      managed: { ...healthy.report.managed, attempts_without_response: 3, unknown_attempt_charge: 1 },
+    },
+  }
+  checkServer(host).click()
+  await ready(() => host.textContent?.includes("4 calls · 4 dispatches") === true)
+  expect(host.textContent).toContain("1 failed · 1 cancelled · 1 timed out · 1 without a terminal outcome")
+  expect(host.textContent).toContain("2 requests without HTTP attempt evidence")
+  expect(host.textContent).toContain("3 HTTP attempts checked · 1 without a known call-to-hold link")
+  expect(host.textContent).toContain("An absent link does not establish a zero charge")
 })

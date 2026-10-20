@@ -5,6 +5,63 @@ description: "Start, continue, export, and import a research conversation."
 
 A session is one conversation: your requests, the responses, and the recorded tool activity. OpenScience saves sessions so you can return to a task.
 
+## Local storage
+
+Session headers, messages, tool parts, todos and saved diffs are stored in
+`research.sqlite` under your OpenScience data directory. Existing identifiers
+are preserved, including parent sessions and tool call IDs. The first access
+imports older records atomically; their original `storage/` JSON files remain
+as migration backups. After import, the database is authoritative: editing an
+old JSON file does not edit the conversation, and deleting a conversation does
+not restore it from a backup file.
+
+Close older OpenScience versions before upgrading a shared data directory; they
+still write the legacy files and do not understand the database. Use the session
+export and import commands below to exchange conversations across versions.
+If migration reports a malformed legacy file, repair that original file and
+retry. No partial conversation import is committed. The database is included
+when relocating the application's data directory.
+
+Later data-root rescans can import previously unseen records into the database,
+including while the current server is running. Records already imported or deleted
+are never replaced by a legacy backup.
+
+Early experimental database versions did not retain deletion history. When upgrading
+one of those databases, unseen backups remain pending rather than reappearing as
+conversations. Run `openscience debug legacy-import` to list pending record keys and
+SHA-256 hashes without printing conversation content. To restore selected snapshots,
+pass their exact keys explicitly:
+
+```bash
+openscience debug legacy-import --restore session/PROJECT_ID/SESSION_ID
+```
+
+Multiple keys can follow `--restore`; restoration is atomic. Records deleted by the current database cannot
+be recovered through this command. Original JSON backups remain unchanged.
+
+## Check settled Ace charges
+
+Open the session's context panel from the header and choose **Check settled charges**.
+The Context button is available before the first model response, including when
+the first call fails or is cancelled. OpenScience
+looks up the task's recorded Ace HTTP call IDs, including descendant worker sessions,
+against the signed-in account and current workspace's Wallet ledger. This read-only
+check works independently of session trace sharing and does not send conversation
+content or authorize spending.
+
+The **Settled receipts subtotal** includes only matching settled holds and ledger
+receipts. Amounts retain six decimal places in USD so small charges are visible.
+Pending, unknown or missing, inconsistent, and released or expired calls are listed
+separately. A subtotal with unresolved calls is incomplete; missing evidence is never
+proof that the task was free. Calculated Ace amounts, provider-reported amounts and
+BYOK estimates remain separate in **Model call usage**. Older calls without HTTP IDs
+and older servers without receipt support remain explicit.
+
+Receipt IDs and charge evidence are saved in `research.sqlite`, scoped to the
+account, workspace and server. Changing accounts clears the displayed result. Run
+the check again to read the current workspace; the view does not reuse another
+account's saved charges. New calls or later settlement require another check.
+
 ## Start a session
 
 Open the workspace with `openscience`, or send a single request from a terminal:

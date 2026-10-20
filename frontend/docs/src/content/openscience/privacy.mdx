@@ -20,11 +20,19 @@ Choosing a local model removes the remote model request. It does not disable onl
 
 While signed in, session traces are shared by default, including sessions using your own keys, subscriptions, and local models. Existing opt-outs remain in effect. Traces can include prompts and model context, provider-visible reasoning and responses, tool inputs and outputs, searches, errors, and reported usage.
 
-Open **Customize → General → Data & privacy → Share session traces** to turn off uploads from this device and discard queued and rejected records. Account preferences can disable sharing across devices or exclude user-owned routes. The device setting does not override an account opt-out. Signing out also stops uploads.
+Open **Customize → Permissions → Data & privacy → Share session traces** to turn off uploads from this device and discard queued and rejected records. Account preferences can disable sharing across devices or exclude user-owned routes. The device setting does not override an account opt-out. Signing out also stops uploads.
 
-The **Delivery** row distinguishes queued, acknowledged, and rejected records. Temporary failures can leave records waiting for retry. Large text may be truncated and binary attachments represented by metadata. Known credentials are redacted, but private research can still appear in prompts and tool output.
+The **Logging health** row shows queued, acknowledged and rejected-record counts from this device. Delivery errors appear separately so the counts stay visible. **Last acknowledgement** shows the most recent confirmed delivery time; rejected records remain local and are not retried automatically. **Refresh** reads current status without forcing an upload. Acknowledgements alone do not verify complete usage or charges. **Check server** separately requests a read-only report for the signed-in account, this device and the selected workspace over the last 24 hours. It checks workspace-scoped delivery receipts (including deliveries without stored events), response-to-usage projection, and managed call/hold/ledger agreement. Pending settlement and unknown provider fields are distinct from confirmed discrepancies. The report cannot see queued or rejected device records, or requests rejected before a receipt. New replay-only deliveries are reported separately from missing accepted events; historical receipts without workspace attribution can only be checked when associated with stored events. No stored responses is shown as **No data**, and an older or unreachable server is explicitly unavailable. Checking does not upload traces, change consent, debit credits or repair records.
+
+Local call-attempt metadata and trace-sharing delivery records are saved in the shared `research.sqlite` database. A model HTTP attempt is recorded before dispatch, including retries and requests that fail or are cancelled before a response. Calls without provider usage remain unknown. Diagnostic metadata stays local when sharing is off; disabling sharing discards upload payloads and trace bindings, including pending and rejected payloads in the migrated queue backup.
+
+Logging health also shows the oldest queued record, flags waits longer than five minutes, and lists the latest delivery attempt and rejected event using opaque IDs and HTTP status codes. It does not display server response bodies. A pending attempt means no completed acknowledgement is stored; it does not prove that the server received nothing.
+
+Temporary delivery failures can leave queued records waiting for automatic retry. Large text may be truncated and binary attachments represented by metadata. Known credentials are redacted, but private research can still appear in prompts and tool output.
 
 For support investigations, `openscience debug audit <session>` prints a local, content-free report for that conversation, its internal title and summary calls, and its worker sessions. It includes local and opaque telemetry session IDs, routes, models, timestamps, call IDs, provider request IDs, recorded token counts when a visible step has them, and any managed hold IDs, but not prompts, responses, tool payloads, or session titles. The command does not upload anything or bypass trace-sharing preferences.
+
+The audit’s `cost` field labels ChatGPT and other subscription routes as `subscription` with a null amount, rather than implying that subscription access is free. New calls retain `reportedCostUSD` separately when the provider supplies it; a reported zero remains zero. `recordedCostUSD` preserves historical step accounting and may be a calculation rather than a receipt. New completed steps label catalog estimates as `catalog_estimate` and calculated Ace amounts as `wallet_calculated`; these are not settled receipts. Older saved steps without cost provenance remain `recorded_unclassified`; calls without cost evidence are `unknown`. Provider-reported amounts are not proof of a settled Ace charge, and subscription fees are not allocated per call.
 
 The [privacy policy](https://openscience.sh/privacy) describes retention and account deletion controls. Disabling future uploads and deleting already stored account data are different actions. Review the scope of the deletion control before confirming it; telemetry deletion does not remove your local project, revoke external credentials, or reverse billing records.
 
@@ -43,3 +51,25 @@ Conversation exports and saved Results can contain research material. Inspect th
 ## Report a privacy or security issue
 
 Use private account support for account data and payment details. Follow the [security reporting policy](https://github.com/synthetic-sciences/openscience/blob/main/SECURITY.md) for vulnerabilities. A public issue should contain a minimal reproduction with credentials and private research removed.
+
+
+## Inspect per-call usage
+
+Open a conversation’s context indicator to see **Model call usage**. Each completed step shows its access route, model, provider token counts, cost basis, call ID and any recorded Ace hold ID. Provider-reported input, output, reasoning, cache-read and cache-write counts remain separate; an omitted field or an older record without that evidence shows **Unknown**, while a reported zero stays zero. Counts are not added together because some providers include reasoning in output and cache reads in input.
+
+Provider-reported amounts, calculated Ace amounts and catalog estimates have separate subtotals for this session. Child agents have their own sessions. Subscription fees are not allocated per call. The historical accounting total may include estimates; use the per-call basis before interpreting a value as a charge.
+
+
+### HTTP attempt coverage
+
+Server reconciliation reports stored HTTP dispatches, completions, failures,
+cancellations and timeouts by call ID. A dispatch without a recorded terminal
+outcome stays pending; it is not presented as a successful or failed call. Older
+requests without normalized HTTP identities remain unclassified. Older servers
+that do not expose this coverage show it as unknown.
+
+Ace calls without model responses also participate in hold and charge checks.
+A missing call-to-hold link leaves the charge unknown; it does not establish a
+zero charge. These checks do not create usage or billing rows. Server reports
+only cover events received inside the selected window, so an outcome outside
+that window can leave a dispatch pending in that report.

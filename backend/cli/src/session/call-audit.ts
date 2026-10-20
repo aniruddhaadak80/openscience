@@ -1,8 +1,20 @@
 import { Session } from "."
 import { SessionTraceStore } from "./trace-store"
+import type { MessageV2 } from "./message-v2"
 import { UsageLogging } from "./usage-logging"
 
 export namespace CallAudit {
+  function cost(
+    route: string,
+    reported?: number | null,
+    recorded?: number,
+  ): { source: "subscription" | "provider_response" | "recorded_unclassified" | "unknown"; amountUSD: number | null } {
+    if (route === "chatgpt" || route === "subscription") return { source: "subscription", amountUSD: null }
+    if (typeof reported === "number") return { source: "provider_response", amountUSD: reported }
+    if (recorded !== undefined) return { source: "recorded_unclassified", amountUSD: recorded }
+    return { source: "unknown", amountUSD: null }
+  }
+
   export async function report(rootID: string) {
     await Session.get(rootID)
     const pending = [rootID]
@@ -21,7 +33,22 @@ export namespace CallAudit {
       providerRequest?: string
       hold?: string
       recordedTokens?: { input: number; output: number; reasoning: number; cache: { read: number; write: number } }
+      /** Historical step accounting; may be calculated, not a billing receipt. */
       recordedCostUSD?: number
+      outcome?: SessionTraceStore.ModelCall["outcome"]
+      httpStatus?: number
+      reportedCostUSD?: number | null
+      reportedTokens?: NonNullable<MessageV2.StepFinishPart["usage"]>["reported"]
+      cost: {
+        source:
+          | "subscription"
+          | "provider_response"
+          | "recorded_unclassified"
+          | "unknown"
+          | "wallet_calculated"
+          | "catalog_estimate"
+        amountUSD: number | null
+      }
     }[] = []
     while (pending.length) {
       const sessionID = pending.shift()!
@@ -45,6 +72,11 @@ export namespace CallAudit {
           httpCall: call.id,
           ...(call.providerRequest && { providerRequest: call.providerRequest }),
           ...(call.hold && { hold: call.hold }),
+          ...(call.reportedCostUSD !== undefined && { reportedCostUSD: call.reportedCostUSD }),
+          ...(call.reported && { reportedTokens: call.reported }),
+          ...(call.outcome && { outcome: call.outcome }),
+          ...(call.httpStatus !== undefined && { httpStatus: call.httpStatus }),
+          cost: cost(call.route, call.reportedCostUSD),
         })
       }
       for (const message of await Session.messages({ sessionID })) {
@@ -64,6 +96,16 @@ export namespace CallAudit {
             ...(part.usage.hold && { hold: part.usage.hold }),
             recordedTokens: part.tokens,
             recordedCostUSD: part.cost,
+            ...(part.usage.reported && { reportedTokens: part.usage.reported }),
+            ...(part.usage.reportedCostUSD !== undefined && { reportedCostUSD: part.usage.reportedCostUSD }),
+            cost:
+              part.usage.cost ??
+              cost(
+                part.usage.route,
+                part.usage.reportedCostUSD ??
+                  (part.usage.call ? calls[recorded.get(part.usage.call) ?? -1]?.reportedCostUSD : undefined),
+                part.cost,
+              ),
           }
           const index = part.usage.call ? recorded.get(part.usage.call) : undefined
           if (index === undefined) calls.push(call)

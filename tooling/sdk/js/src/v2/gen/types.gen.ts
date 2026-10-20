@@ -567,6 +567,19 @@ export type StepFinishPart = {
     call?: string
     hold?: string
     providerRequest?: string
+    reported?: {
+      input_tokens: number | null
+      output_tokens: number | null
+      total_tokens: number | null
+      reasoning_tokens: number | null
+      cached_input_tokens: number | null
+      cache_creation_input_tokens: number | null
+    }
+    reportedCostUSD?: number | null
+    cost?: {
+      source: "subscription" | "provider_response" | "wallet_calculated" | "catalog_estimate" | "unknown"
+      amountUSD: number | null
+    }
   }
   tier?: string
   reason: string
@@ -990,6 +1003,474 @@ export type ExperimentRun = {
   config: {
     [key: string]: unknown
   }
+  provenance?: {
+    format: "openscience.provenance.v1"
+    kind: "kernel" | "local_compute" | "remote_compute" | "artifact_version"
+    identity: {
+      project_id:
+        | {
+            status: "available"
+            value: string
+          }
+        | {
+            status: "unavailable"
+            reason:
+              | "not_applicable"
+              | "not_captured"
+              | "not_implemented"
+              | "not_published"
+              | "not_versioned"
+              | "remote_unverified"
+          }
+      session_id:
+        | {
+            status: "available"
+            value: string
+          }
+        | {
+            status: "unavailable"
+            reason:
+              | "not_applicable"
+              | "not_captured"
+              | "not_implemented"
+              | "not_published"
+              | "not_versioned"
+              | "remote_unverified"
+          }
+      run_id:
+        | {
+            status: "available"
+            value: string
+          }
+        | {
+            status: "unavailable"
+            reason:
+              | "not_applicable"
+              | "not_captured"
+              | "not_implemented"
+              | "not_published"
+              | "not_versioned"
+              | "remote_unverified"
+          }
+    }
+    input: {
+      code:
+        | {
+            status: "available"
+            value: string
+          }
+        | {
+            status: "unavailable"
+            reason:
+              | "not_applicable"
+              | "not_captured"
+              | "not_implemented"
+              | "not_published"
+              | "not_versioned"
+              | "remote_unverified"
+          }
+      cwd:
+        | {
+            status: "available"
+            value: string
+          }
+        | {
+            status: "unavailable"
+            reason:
+              | "not_applicable"
+              | "not_captured"
+              | "not_implemented"
+              | "not_published"
+              | "not_versioned"
+              | "remote_unverified"
+          }
+      code_state:
+        | {
+            status: "available"
+            value: {
+              repository:
+                | {
+                    status: "available"
+                    value: string
+                  }
+                | {
+                    status: "unavailable"
+                    reason:
+                      | "not_applicable"
+                      | "not_captured"
+                      | "not_implemented"
+                      | "not_published"
+                      | "not_versioned"
+                      | "remote_unverified"
+                  }
+              branch:
+                | {
+                    status: "available"
+                    value: string
+                  }
+                | {
+                    status: "unavailable"
+                    reason:
+                      | "not_applicable"
+                      | "not_captured"
+                      | "not_implemented"
+                      | "not_published"
+                      | "not_versioned"
+                      | "remote_unverified"
+                  }
+              commit:
+                | {
+                    status: "available"
+                    value: string
+                  }
+                | {
+                    status: "unavailable"
+                    reason:
+                      | "not_applicable"
+                      | "not_captured"
+                      | "not_implemented"
+                      | "not_published"
+                      | "not_versioned"
+                      | "remote_unverified"
+                  }
+              dirty:
+                | {
+                    status: "available"
+                    value: boolean
+                  }
+                | {
+                    status: "unavailable"
+                    reason:
+                      | "not_applicable"
+                      | "not_captured"
+                      | "not_implemented"
+                      | "not_published"
+                      | "not_versioned"
+                      | "remote_unverified"
+                  }
+            }
+          }
+        | {
+            status: "unavailable"
+            reason:
+              | "not_applicable"
+              | "not_captured"
+              | "not_implemented"
+              | "not_published"
+              | "not_versioned"
+              | "remote_unverified"
+          }
+    }
+    environment: {
+      host:
+        | {
+            status: "available"
+            value: {
+              platform: string
+              arch: string
+              runtimes: {
+                [key: string]: string
+              }
+            }
+          }
+        | {
+            status: "unavailable"
+            reason:
+              | "not_applicable"
+              | "not_captured"
+              | "not_implemented"
+              | "not_published"
+              | "not_versioned"
+              | "remote_unverified"
+          }
+      kernel:
+        | {
+            status: "available"
+            value: {
+              id: string
+              language: string
+              environment_name:
+                | {
+                    status: "available"
+                    value: string
+                  }
+                | {
+                    status: "unavailable"
+                    reason:
+                      | "not_applicable"
+                      | "not_captured"
+                      | "not_implemented"
+                      | "not_published"
+                      | "not_versioned"
+                      | "remote_unverified"
+                  }
+              interpreter:
+                | {
+                    status: "available"
+                    value: {
+                      name: string
+                      binary: string
+                      version:
+                        | {
+                            status: "available"
+                            value: string
+                          }
+                        | {
+                            status: "unavailable"
+                            reason:
+                              | "not_applicable"
+                              | "not_captured"
+                              | "not_implemented"
+                              | "not_published"
+                              | "not_versioned"
+                              | "remote_unverified"
+                          }
+                    }
+                  }
+                | {
+                    status: "unavailable"
+                    reason:
+                      | "not_applicable"
+                      | "not_captured"
+                      | "not_implemented"
+                      | "not_published"
+                      | "not_versioned"
+                      | "remote_unverified"
+                  }
+              incarnation:
+                | {
+                    status: "available"
+                    value: number
+                  }
+                | {
+                    status: "unavailable"
+                    reason:
+                      | "not_applicable"
+                      | "not_captured"
+                      | "not_implemented"
+                      | "not_published"
+                      | "not_versioned"
+                      | "remote_unverified"
+                  }
+              process_id:
+                | {
+                    status: "available"
+                    value: number
+                  }
+                | {
+                    status: "unavailable"
+                    reason:
+                      | "not_applicable"
+                      | "not_captured"
+                      | "not_implemented"
+                      | "not_published"
+                      | "not_versioned"
+                      | "remote_unverified"
+                  }
+              process_started_at:
+                | {
+                    status: "available"
+                    value: string
+                  }
+                | {
+                    status: "unavailable"
+                    reason:
+                      | "not_applicable"
+                      | "not_captured"
+                      | "not_implemented"
+                      | "not_published"
+                      | "not_versioned"
+                      | "remote_unverified"
+                  }
+            }
+          }
+        | {
+            status: "unavailable"
+            reason:
+              | "not_applicable"
+              | "not_captured"
+              | "not_implemented"
+              | "not_published"
+              | "not_versioned"
+              | "remote_unverified"
+          }
+    }
+    outputs: {
+      status: "queued" | "running" | "succeeded" | "failed" | "cancelled" | "interrupted" | "inconclusive"
+      items: Array<{
+        kind: "stream" | "display" | "result" | "error" | "artifact" | "checkpoint"
+        label: string
+        artifact_id:
+          | {
+              status: "available"
+              value: string
+            }
+          | {
+              status: "unavailable"
+              reason:
+                | "not_applicable"
+                | "not_captured"
+                | "not_implemented"
+                | "not_published"
+                | "not_versioned"
+                | "remote_unverified"
+            }
+        path:
+          | {
+              status: "available"
+              value: string
+            }
+          | {
+              status: "unavailable"
+              reason:
+                | "not_applicable"
+                | "not_captured"
+                | "not_implemented"
+                | "not_published"
+                | "not_versioned"
+                | "remote_unverified"
+            }
+        sha256: string
+        size: number
+        version_id:
+          | {
+              status: "available"
+              value: string
+            }
+          | {
+              status: "unavailable"
+              reason:
+                | "not_applicable"
+                | "not_captured"
+                | "not_implemented"
+                | "not_published"
+                | "not_versioned"
+                | "remote_unverified"
+            }
+        version:
+          | {
+              status: "available"
+              value: number
+            }
+          | {
+              status: "unavailable"
+              reason:
+                | "not_applicable"
+                | "not_captured"
+                | "not_implemented"
+                | "not_published"
+                | "not_versioned"
+                | "remote_unverified"
+            }
+        created_at:
+          | {
+              status: "available"
+              value: string
+            }
+          | {
+              status: "unavailable"
+              reason:
+                | "not_applicable"
+                | "not_captured"
+                | "not_implemented"
+                | "not_published"
+                | "not_versioned"
+                | "remote_unverified"
+            }
+      }>
+    }
+    timestamps: {
+      created_at:
+        | {
+            status: "available"
+            value: string
+          }
+        | {
+            status: "unavailable"
+            reason:
+              | "not_applicable"
+              | "not_captured"
+              | "not_implemented"
+              | "not_published"
+              | "not_versioned"
+              | "remote_unverified"
+          }
+      started_at:
+        | {
+            status: "available"
+            value: string
+          }
+        | {
+            status: "unavailable"
+            reason:
+              | "not_applicable"
+              | "not_captured"
+              | "not_implemented"
+              | "not_published"
+              | "not_versioned"
+              | "remote_unverified"
+          }
+      completed_at:
+        | {
+            status: "available"
+            value: string
+          }
+        | {
+            status: "unavailable"
+            reason:
+              | "not_applicable"
+              | "not_captured"
+              | "not_implemented"
+              | "not_published"
+              | "not_versioned"
+              | "remote_unverified"
+          }
+    }
+    handoff: {
+      /**
+       * @deprecated Compatibility field. Managed compute is retired and this value is always unavailable.
+       */
+      atlas_compute_id:
+        | {
+            status: "available"
+            value: string
+          }
+        | {
+            status: "unavailable"
+            reason:
+              | "not_applicable"
+              | "not_captured"
+              | "not_implemented"
+              | "not_published"
+              | "not_versioned"
+              | "remote_unverified"
+          }
+      atlas_run_id:
+        | {
+            status: "available"
+            value: string
+          }
+        | {
+            status: "unavailable"
+            reason:
+              | "not_applicable"
+              | "not_captured"
+              | "not_implemented"
+              | "not_published"
+              | "not_versioned"
+              | "remote_unverified"
+          }
+    }
+    scientific_capability?: {
+      id: string
+      version: string
+      manifest_sha256: string
+      profile: "task" | "smoke"
+      runtime_digest: string
+      execution_network?: "none"
+      lock_digest?: string
+    }
+  }
   summary: {
     [key: string]: unknown
   }
@@ -1041,6 +1522,8 @@ export type Study = {
   sessionID: string
   name: string
   purpose: string
+  question?: string
+  hypothesis?: string
   metric: string
   direction: "minimize" | "maximize"
   status: "running" | "paused" | "halted" | "concluded"
@@ -9334,6 +9817,19 @@ export type SettingsUsageLoggingGetResponses = {
     quarantined: number
     delivered: number
     lastDelivery?: string
+    oldestQueuedAt?: string
+    stalled?: boolean
+    lastAttempt?: {
+      deliveryID: string
+      startedAt: string
+      completedAt?: string
+      httpStatus?: number
+      state: "pending" | "response_received" | "rejected" | "acknowledged" | "partial" | "unknown"
+    }
+    rejection?: {
+      eventID: string
+      reason: string
+    }
     error?: string
   }
 }
@@ -9360,12 +9856,214 @@ export type SettingsUsageLoggingUpdateResponses = {
     quarantined: number
     delivered: number
     lastDelivery?: string
+    oldestQueuedAt?: string
+    stalled?: boolean
+    lastAttempt?: {
+      deliveryID: string
+      startedAt: string
+      completedAt?: string
+      httpStatus?: number
+      state: "pending" | "response_received" | "rejected" | "acknowledged" | "partial" | "unknown"
+    }
+    rejection?: {
+      eventID: string
+      reason: string
+    }
     error?: string
   }
 }
 
 export type SettingsUsageLoggingUpdateResponse =
   SettingsUsageLoggingUpdateResponses[keyof SettingsUsageLoggingUpdateResponses]
+
+export type SettingsUsageLoggingHealthData = {
+  body?: never
+  path?: never
+  query?: never
+  url: "/settings/usage-logging/health"
+}
+
+export type SettingsUsageLoggingHealthResponses = {
+  /**
+   * Server reconciliation or an explicit unavailable state
+   */
+  200:
+    | {
+        state: "available"
+        report: {
+          schema_version: 1
+          scope: "account_installation_workspace"
+          since: string
+          until: string
+          checked_at: string
+          status: "healthy" | "attention" | "no_data" | "incomplete"
+          receipts: {
+            deliveries: number
+            receipt_only?: number
+            replayed_only?: number
+            anomalous: number
+            orphaned_events: number
+          }
+          usage: {
+            responses: number
+            projected: number
+            missing_projection: number
+            unknown_input: number
+            unknown_output: number
+            unknown_reasoning: number
+            unknown_cache_read: number
+            unknown_cache_write: number
+          }
+          attempts?: {
+            calls: number
+            dispatched: number
+            completed: number
+            failed: number
+            cancelled: number
+            timed_out: number
+            pending: number
+            unclassified_requests: number
+          }
+          managed: {
+            attempts_without_response?: number
+            unknown_attempt_charge?: number
+            responses: number
+            pending: number
+            settled: number
+            not_charged: number
+            missing_call_id: number
+            missing_link: number
+            ambiguous_link: number
+            missing_hold: number
+            hold_mismatch: number
+            settled_missing_charge: number
+            duplicate_charge: number
+            token_mismatch: number
+            charge_amount_mismatch: number
+            unknown_charge_amount: number
+          }
+        }
+      }
+    | {
+        state: "unavailable"
+        reason:
+          "signed_out" | "unsupported" | "unauthorized" | "server_unavailable" | "invalid_report" | "account_changed"
+      }
+}
+
+export type SettingsUsageLoggingHealthResponse =
+  SettingsUsageLoggingHealthResponses[keyof SettingsUsageLoggingHealthResponses]
+
+export type SettingsUsageImportsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: "/settings/usage/imports"
+}
+
+export type SettingsUsageImportsResponses = {
+  /**
+   * Billing imports
+   */
+  200: Array<{
+    id: string
+    provider: string
+    accountLabel: string
+    importedAt: string
+    records: number
+  }>
+}
+
+export type SettingsUsageImportsResponse = SettingsUsageImportsResponses[keyof SettingsUsageImportsResponses]
+
+export type SettingsUsageImportBillingData = {
+  body?: {
+    schema_version: 1
+    provider: string
+    account_label: string
+    currency: "USD"
+    records: Array<{
+      billing_id: string
+      kind?: "charge" | "credit"
+      provider_request_id?: string
+      occurred_at: string
+      model?: string
+      requested_model?: string
+      amount_usd: string
+    }>
+  }
+  path?: never
+  query?: never
+  url: "/settings/usage/imports"
+}
+
+export type SettingsUsageImportBillingResponses = {
+  /**
+   * Imported billing evidence
+   */
+  200: {
+    id: string
+    provider: string
+    accountLabel: string
+    importedAt: string
+    records: number
+  }
+}
+
+export type SettingsUsageImportBillingResponse =
+  SettingsUsageImportBillingResponses[keyof SettingsUsageImportBillingResponses]
+
+export type SettingsUsageRemoveImportData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query?: never
+  url: "/settings/usage/imports/{id}"
+}
+
+export type SettingsUsageRemoveImportResponses = {
+  /**
+   * Removed
+   */
+  200: boolean
+}
+
+export type SettingsUsageRemoveImportResponse =
+  SettingsUsageRemoveImportResponses[keyof SettingsUsageRemoveImportResponses]
+
+export type SettingsUsageBillingData = {
+  body?: never
+  path?: never
+  query?: {
+    start?: string
+    end?: string
+  }
+  url: "/settings/usage/billing"
+}
+
+export type SettingsUsageBillingResponses = {
+  /**
+   * Billing records
+   */
+  200: Array<{
+    kind: "charge" | "credit"
+    id: string
+    provider: string
+    accountLabel: string
+    billingID: string
+    providerRequestID?: string
+    occurredAt: string
+    model?: string
+    requestedModel?: string
+    amountUSD: string
+    match: "matched" | "unmatched" | "ambiguous"
+    callID?: string
+    sessionID?: string
+  }>
+}
+
+export type SettingsUsageBillingResponse = SettingsUsageBillingResponses[keyof SettingsUsageBillingResponses]
 
 export type SettingsUsageLocalData = {
   body?: never
@@ -9396,6 +10094,22 @@ export type SettingsUsageLocalResponses = {
       cacheWrite: number
       tokens: number
       cost: number
+      costs?: Array<{
+        source:
+          | "wallet_receipt"
+          | "provider_response"
+          | "catalog_estimate"
+          | "imported_billing"
+          | "imported_credit"
+          | "wallet_calculated"
+          | "recorded_unclassified"
+          | "subscription"
+          | "no_provider_charge"
+          | "unknown"
+        amountUSD: string | null
+        known: number
+        unknown: number
+      }>
     }>
   }
 }
@@ -9431,6 +10145,22 @@ export type SettingsUsageManagedResponses = {
       cacheWrite: number
       tokens: number
       cost: number
+      costs?: Array<{
+        source:
+          | "wallet_receipt"
+          | "provider_response"
+          | "catalog_estimate"
+          | "imported_billing"
+          | "imported_credit"
+          | "wallet_calculated"
+          | "recorded_unclassified"
+          | "subscription"
+          | "no_provider_charge"
+          | "unknown"
+        amountUSD: string | null
+        known: number
+        unknown: number
+      }>
     }>
   }
 }
@@ -11565,6 +12295,62 @@ export type SessionChildrenResponses = {
 
 export type SessionChildrenResponse = SessionChildrenResponses[keyof SessionChildrenResponses]
 
+export type SessionReceiptsData = {
+  body?: never
+  path: {
+    sessionID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/session/{sessionID}/receipts"
+}
+
+export type SessionReceiptsErrors = {
+  /**
+   * Bad request
+   */
+  400: BadRequestError
+  /**
+   * Not found
+   */
+  404: NotFoundError
+}
+
+export type SessionReceiptsError = SessionReceiptsErrors[keyof SessionReceiptsErrors]
+
+export type SessionReceiptsResponses = {
+  /**
+   * Settled ledger evidence, with pending and missing calls explicit
+   */
+  200: {
+    rootSessionID: string
+    sessions: number
+    managedCalls: number
+    missingCallIDs: number
+    state: "available" | "unavailable"
+    reason?: "signed_out" | "unsupported" | "unauthorized" | "server_unavailable" | "invalid_report" | "account_changed"
+    checkedAt?: string
+    chargedMicrousd?: string
+    calls: Array<{
+      call_id: string
+      state: "missing" | "pending" | "not_charged" | "settled" | "inconsistent" | "unknown"
+      hold_id: string | null
+      receipt_id: string | null
+    }>
+    receipts: Array<{
+      receipt_id: string
+      hold_id: string
+      charged_microusd: string
+      settled_at: string
+      provider: string
+      model: string
+    }>
+  }
+}
+
+export type SessionReceiptsResponse = SessionReceiptsResponses[keyof SessionReceiptsResponses]
+
 export type SessionTraceData = {
   body?: never
   path: {
@@ -13656,6 +14442,42 @@ export type ExperimentsStudyResponses = {
 }
 
 export type ExperimentsStudyResponse = ExperimentsStudyResponses[keyof ExperimentsStudyResponses]
+
+export type ExperimentsStudyUpdateData = {
+  body?: {
+    question?: string
+    hypothesis?: string
+  }
+  path: {
+    studyID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/experiments/studies/{studyID}"
+}
+
+export type ExperimentsStudyUpdateErrors = {
+  /**
+   * Bad request
+   */
+  400: BadRequestError
+  /**
+   * Not found
+   */
+  404: NotFoundError
+}
+
+export type ExperimentsStudyUpdateError = ExperimentsStudyUpdateErrors[keyof ExperimentsStudyUpdateErrors]
+
+export type ExperimentsStudyUpdateResponses = {
+  /**
+   * Study
+   */
+  200: Study
+}
+
+export type ExperimentsStudyUpdateResponse = ExperimentsStudyUpdateResponses[keyof ExperimentsStudyUpdateResponses]
 
 export type ExperimentsStudyControlData = {
   body?: never

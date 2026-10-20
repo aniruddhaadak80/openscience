@@ -7,6 +7,7 @@ import { BusEvent } from "@/bus/bus-event"
 import { Global } from "@/global"
 import { Identifier } from "@/id/id"
 import { Instance } from "@/project/instance"
+import { ProvenanceEnvelope } from "@/science/provenance/envelope"
 import { Log } from "@/util/log"
 
 /**
@@ -46,6 +47,7 @@ export namespace Experiments {
       status: RunStatus,
       source: z.enum(["job", "kernel", "external"]),
       config: z.record(z.string(), z.unknown()),
+      provenance: ProvenanceEnvelope.Schema.optional(),
       summary: z.record(z.string(), z.unknown()),
       headline: z.number().nullable(),
       baselineDelta: z.number().nullable(),
@@ -97,6 +99,8 @@ export namespace Experiments {
       sessionID: z.string(),
       name: z.string(),
       purpose: z.string(),
+      question: z.string().max(4_000).optional(),
+      hypothesis: z.string().max(4_000).optional(),
       metric: z.string(),
       direction: Direction,
       status: StudyStatus,
@@ -180,6 +184,8 @@ export namespace Experiments {
       session_id TEXT NOT NULL,
       name TEXT NOT NULL,
       purpose TEXT NOT NULL,
+      question TEXT,
+      hypothesis TEXT,
       metric TEXT NOT NULL,
       direction TEXT NOT NULL,
       status TEXT NOT NULL,
@@ -230,6 +236,7 @@ export namespace Experiments {
       status TEXT NOT NULL,
       source TEXT NOT NULL,
       config TEXT NOT NULL,
+      provenance TEXT,
       summary TEXT NOT NULL,
       headline REAL,
       baseline_delta REAL,
@@ -281,6 +288,12 @@ export namespace Experiments {
     if (!columns.some((column) => column.name === "directives")) {
       database.exec("ALTER TABLE study ADD COLUMN directives TEXT NOT NULL DEFAULT '[]'")
     }
+    for (const name of ["question", "hypothesis"]) {
+      if (!columns.some((column) => column.name === name)) database.exec(`ALTER TABLE study ADD COLUMN ${name} TEXT`)
+    }
+    const runColumns = database.query("PRAGMA table_info(run)").all() as Array<{ name: string }>
+    if (!runColumns.some((column) => column.name === "provenance"))
+      database.exec("ALTER TABLE run ADD COLUMN provenance TEXT")
     databases.set(projectID, database)
     return database
   }
@@ -319,6 +332,7 @@ export namespace Experiments {
     status: string
     source: string
     config: string
+    provenance: string | null
     summary: string
     headline: number | null
     baseline_delta: number | null
@@ -343,6 +357,7 @@ export namespace Experiments {
       status: RunStatus.parse(row.status),
       source: row.source as Run["source"],
       config: parse(row.config, {}),
+      provenance: row.provenance ? ProvenanceEnvelope.Schema.parse(JSON.parse(row.provenance)) : undefined,
       summary: parse(row.summary, {}),
       headline: row.headline,
       baselineDelta: row.baseline_delta,
@@ -362,6 +377,8 @@ export namespace Experiments {
     session_id: string
     name: string
     purpose: string
+    question: string | null
+    hypothesis: string | null
     metric: string
     direction: string
     status: string
@@ -389,6 +406,8 @@ export namespace Experiments {
       sessionID: row.session_id,
       name: row.name,
       purpose: row.purpose,
+      question: row.question ?? undefined,
+      hypothesis: row.hypothesis ?? undefined,
       metric: row.metric,
       direction: Direction.parse(row.direction),
       status: StudyStatus.parse(row.status),
@@ -613,6 +632,29 @@ export namespace Experiments {
     return updated
   }
 
+  /** Retain evidence from the bound compute job, even after that job's record is removed. */
+  export async function recordProvenance(
+    runID: string,
+    jobID: string,
+    evidence: ProvenanceEnvelope.Schema,
+    input?: { projectID?: string },
+  ) {
+    const project = projectID(input)
+    const database = await db(project)
+    const provenance = ProvenanceEnvelope.Schema.parse(evidence)
+    if (provenance.identity.run_id.status === "available" && provenance.identity.run_id.value !== jobID) {
+      throw new Error("Provenance does not belong to the bound compute job")
+    }
+    const existing = await getRun(runID, { projectID: project })
+    if (!existing || existing.jobID !== jobID) return
+    const encoded = json(provenance)
+    if (encoded === json(existing.provenance)) return existing
+    database.query("UPDATE run SET provenance = ? WHERE id = ? AND job_id = ?").run(encoded, runID, jobID)
+    const updated = await getRun(runID, { projectID: project })
+    if (updated) await publish(Event.RunUpdated, { run: updated })
+    return updated
+  }
+
   /** The script's own config, reported at init, refines what the study
    * planned for the run. */
   export async function mergeConfig(
@@ -812,6 +854,8 @@ export namespace Experiments {
     sessionID: string
     name: string
     purpose: string
+    question?: string
+    hypothesis?: string
     metric: string
     direction: Direction
     root: string
@@ -827,8 +871,8 @@ export namespace Experiments {
     const id = Identifier.ascending("study")
     database
       .query(
-        `INSERT INTO study (id, project_id, session_id, name, purpose, metric, direction, status, root, target, concurrency, kill_criteria, budget, review, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO study (id, project_id, session_id, name, purpose, question, hypothesis, metric, direction, status, root, target, concurrency, kill_criteria, budget, review, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -836,6 +880,8 @@ export namespace Experiments {
         input.sessionID,
         input.name,
         input.purpose,
+        input.question ?? null,
+        input.hypothesis ?? null,
         input.metric,
         input.direction,
         input.root,
@@ -903,6 +949,8 @@ export namespace Experiments {
         | "budget"
         | "review"
         | "purpose"
+        | "question"
+        | "hypothesis"
         | "name"
         | "sessionID"
       >
@@ -916,7 +964,7 @@ export namespace Experiments {
     const next = { ...existing, ...patch, updatedAt: Date.now() }
     database
       .query(
-        `UPDATE study SET status = ?, baseline_run_id = ?, best_run_id = ?, lessons = ?, conclusion = ?, concurrency = ?, kill_criteria = ?, budget = ?, review = ?, purpose = ?, name = ?, turns = ?, cost_usd = ?, session_id = ?, updated_at = ? WHERE id = ?`,
+        `UPDATE study SET status = ?, baseline_run_id = ?, best_run_id = ?, lessons = ?, conclusion = ?, concurrency = ?, kill_criteria = ?, budget = ?, review = ?, purpose = ?, question = ?, hypothesis = ?, name = ?, turns = ?, cost_usd = ?, session_id = ?, updated_at = ? WHERE id = ?`,
       )
       .run(
         next.status,
@@ -929,6 +977,8 @@ export namespace Experiments {
         json(next.budget),
         next.review ? 1 : 0,
         next.purpose,
+        next.question ?? null,
+        next.hypothesis ?? null,
         next.name,
         next.turns,
         next.costUSD,

@@ -248,6 +248,11 @@ export namespace StudyDriver {
         current.followers.set(run.id, follower)
         await follower.poll().catch((error) => log.warn("follow failed", { run: run.id, error }))
         const fresh = (await Experiments.getRun(run.id)) ?? run
+        const info = await job(run.jobID, study.sessionID).catch(() => undefined)
+        if (info?.provenance) await Experiments.recordProvenance(run.id, run.jobID, info.provenance)
+        // Execution can finish before output delivery; keep following until the
+        // retained evidence includes the delivered artifacts and checkpoints.
+        if (info && terminal.has(info.status) && info.lifecycle?.delivery === "pending") continue
         const windows = await recentWindows(fresh.id, criteria.rules, study.metric)
         const reason =
           criteria.rules.length && !fresh.killReason
@@ -264,13 +269,14 @@ export namespace StudyDriver {
             : undefined
         if (reason) {
           await cancelJob(run.jobID, study.sessionID).catch((error) => log.warn("kill failed", { run: run.id, error }))
+          const cancelled = await job(run.jobID, study.sessionID).catch(() => undefined)
+          if (cancelled?.provenance) await Experiments.recordProvenance(run.id, run.jobID, cancelled.provenance)
           await Experiments.finishRun(fresh.id, "killed", { killReason: reason })
           await Experiments.addEvent(study.id, "killed", `${fresh.name} killed: ${reason}`, { runID: fresh.id })
           current.followers.delete(fresh.id)
           current.pending.push(describe(await Experiments.getRun(fresh.id), study, `killed: ${reason}`))
           continue
         }
-        const info = await job(run.jobID, study.sessionID).catch(() => undefined)
         if (!info) {
           // A job record that stays missing was lost with its store; the run
           // cannot end on its own and would hold a slot for the study's life.
@@ -463,7 +469,12 @@ export namespace StudyDriver {
     current.turnsAt = current.turnsAt.filter((at) => now - at < 3_600_000)
     if (!urgent && current.turnsAt.length >= MAX_TURNS_PER_HOUR) return
     const lines = current.pending.splice(0)
-    const text = [`Study update for "${study.name}":`, ...lines.map((line) => `- ${line}`)].join("\n")
+    const text = [
+      `Study update for "${study.name}":`,
+      ...(study.question ? [`Research question: ${study.question}`] : []),
+      ...(study.hypothesis ? [`Hypothesis: ${study.hypothesis}`] : []),
+      ...lines.map((line) => `- ${line}`),
+    ].join("\n")
     const label = `Study update: ${lines.map((line) => line.split(/(?<=\.)\s/)[0]!.replace(/\.$/, "")).join(" · ")}`
     const sent = await prompt(study.sessionID, text, label)
       .then(() => true)

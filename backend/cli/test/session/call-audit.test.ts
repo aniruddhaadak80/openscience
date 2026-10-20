@@ -2,11 +2,20 @@ import { expect, test } from "bun:test"
 import { CallAudit } from "../../src/session/call-audit"
 import { Instance } from "../../src/project/instance"
 import { Session } from "../../src/session"
+import type { MessageV2 } from "../../src/session/message-v2"
 import { UsageLogging } from "../../src/session/usage-logging"
 import { SessionTraceStore } from "../../src/session/trace-store"
 import { tmpdir } from "../fixture/fixture"
 
-async function step(sessionID: string, messageID: string, input: { route: "byok" | "chatgpt"; call: string }) {
+async function step(
+  sessionID: string,
+  messageID: string,
+  input: {
+    route: "byok" | "chatgpt"
+    call: string
+    evidence?: Pick<NonNullable<MessageV2.StepFinishPart["usage"]>, "reported" | "reportedCostUSD" | "cost">
+  },
+) {
   await Session.updateMessage({
     id: messageID,
     sessionID,
@@ -36,6 +45,7 @@ async function step(sessionID: string, messageID: string, input: { route: "byok"
       time: 1_750_000_000_000,
       call: input.call,
       providerRequest: `resp_${input.call}`,
+      ...input.evidence,
     },
   })
 }
@@ -84,8 +94,98 @@ test("a session audit includes BYOK and ChatGPT calls from child sessions withou
       ])
       expect(report.calls.find((call) => call.httpCall === "call-summary")?.stepID).toBeUndefined()
       expect(report.calls.filter((call) => call.httpCall === "call-byok")).toHaveLength(1)
+      expect(report.calls.find((call) => call.httpCall === "call-summary")?.cost).toEqual({
+        source: "subscription",
+        amountUSD: null,
+      })
+      expect(report.calls.find((call) => call.httpCall === "call-chatgpt")?.cost).toEqual({
+        source: "subscription",
+        amountUSD: null,
+      })
+      expect(report.calls.find((call) => call.httpCall === "call-byok")?.cost).toEqual({
+        source: "recorded_unclassified",
+        amountUSD: 0,
+      })
       expect(JSON.stringify(report)).not.toContain("Private research title")
       expect(JSON.stringify(report)).not.toContain("Private worker title")
+    },
+  })
+})
+
+test("audit separates provider-reported zero and positive costs from unknown and legacy accounting", async () => {
+  await using tmp = await tmpdir()
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const session = await Session.create({})
+      for (const receipt of [
+        { id: "zero", cost: 0 },
+        { id: "paid", cost: 0.0123 },
+        { id: "unknown", cost: null },
+        { id: "legacy", cost: undefined },
+      ]) {
+        await SessionTraceStore.recordModelCall({
+          id: receipt.id,
+          sessionID: session.id,
+          messageID: `msg_${receipt.id}`,
+          route: "byok",
+          provider: "openrouter",
+          model: "fixture-model",
+          occurredAt: 1_750_000_000_000,
+          reportedCostUSD: receipt.cost,
+        })
+      }
+      await step(session.id, "msg_paid", { route: "byok", call: "paid" })
+      const report = await CallAudit.report(session.id)
+      expect(report.calls.find((call) => call.httpCall === "zero")?.cost).toEqual({
+        source: "provider_response",
+        amountUSD: 0,
+      })
+      expect(report.calls.find((call) => call.httpCall === "paid")).toMatchObject({
+        recordedCostUSD: 0,
+        reportedCostUSD: 0.0123,
+        cost: { source: "provider_response", amountUSD: 0.0123 },
+      })
+      for (const id of ["unknown", "legacy"]) {
+        expect(report.calls.find((call) => call.httpCall === id)?.cost).toEqual({
+          source: "unknown",
+          amountUSD: null,
+        })
+      }
+    },
+  })
+})
+
+test("audit reads nullable usage and estimate provenance from a step without a retained call trace", async () => {
+  await using tmp = await tmpdir()
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const session = await Session.create({})
+      const reported = {
+        input_tokens: 10,
+        output_tokens: 2,
+        total_tokens: null,
+        reasoning_tokens: null,
+        cached_input_tokens: 0,
+        cache_creation_input_tokens: null,
+      }
+      await step(session.id, "msg_current", {
+        route: "byok",
+        call: "current",
+        evidence: {
+          reported,
+          reportedCostUSD: null,
+          cost: { source: "catalog_estimate", amountUSD: 0.001 },
+        },
+      })
+      const report = await CallAudit.report(session.id)
+      expect(report.calls).toHaveLength(1)
+      expect(report.calls[0]).toMatchObject({
+        reportedTokens: reported,
+        reportedCostUSD: null,
+        cost: { source: "catalog_estimate", amountUSD: 0.001 },
+      })
     },
   })
 })
